@@ -1,17 +1,29 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../api/supabaseClient';
-import { updateOrderStatus, fetchProducts, updateProductStock, addProduct } from '../api/services';
+import { 
+  updateOrderStatus, 
+  fetchProducts, 
+  updateProductStock, 
+  addProduct,
+  fetchAllProfiles,
+  deleteProduct,
+  updateProductFields
+} from '../api/services';
 import './AdminPage.css';
 
 export default function AdminPage() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('orders'); // 'orders' or 'inventory'
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [expandedOrder, setExpandedOrder] = useState(null);
   
+  // States for Modals/Expansions
+  const [expandedOrder, setExpandedOrder] = useState(null);
+  const [editingProduct, setEditingProduct] = useState(null);
+
   // New Product Form State
   const [newProduct, setNewProduct] = useState({
     name: '', category: '', price: '', image_url: '', stock_quantity: 100
@@ -20,9 +32,10 @@ export default function AdminPage() {
   useEffect(() => {
     async function loadAdminData() {
       if (user?.email === 'teyo758@gmail.com') {
-        const [ordersRes, productsRes] = await Promise.all([
+        const [ordersRes, productsRes, customersRes] = await Promise.all([
           supabase.from('orders').select('*, order_items(*)').order('created_at', { ascending: false }),
-          fetchProducts() // from services
+          fetchProducts(),
+          fetchAllProfiles()
         ]);
         
         if (ordersRes.error) {
@@ -31,9 +44,8 @@ export default function AdminPage() {
           setOrders(ordersRes.data || []);
         }
 
-        if (productsRes) {
-          setProducts(productsRes);
-        }
+        if (productsRes) setProducts(productsRes);
+        if (customersRes) setCustomers(customersRes);
       }
       setLoading(false);
     }
@@ -41,12 +53,11 @@ export default function AdminPage() {
     loadAdminData();
   }, [user]);
 
+  // Actions
   const handleStatusChange = async (orderId, newStatus) => {
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
     const success = await updateOrderStatus(orderId, newStatus);
-    if (!success) {
-      alert('Durum güncellenemedi, lütfen tekrar deneyin.');
-    }
+    if (!success) alert('Durum güncellenemedi, lütfen tekrar deneyin.');
   };
 
   const handleStockUpdate = async (productId, newStock) => {
@@ -68,8 +79,35 @@ export default function AdminPage() {
     }
   };
 
+  const handleDeleteProduct = async (productId) => {
+    if (!window.confirm('Bu ürünü silmek istediğinize emin misiniz?')) return;
+    const success = await deleteProduct(productId);
+    if (success) {
+      setProducts(prev => prev.filter(p => p.id !== productId));
+    } else {
+      alert('Ürün silinirken bir hata oluştu');
+    }
+  };
+
+  const saveProductEdit = async () => {
+    if (!editingProduct) return;
+    const success = await updateProductFields(editingProduct.id, {
+      name: editingProduct.name,
+      price: editingProduct.price,
+      category: editingProduct.category,
+      image_url: editingProduct.image_url,
+      stock_quantity: editingProduct.stock_quantity
+    });
+    if (success) {
+      setProducts(prev => prev.map(p => p.id === editingProduct.id ? editingProduct : p));
+      setEditingProduct(null);
+    } else {
+      alert('Güncelleme başarısız oldu.');
+    }
+  };
+
   if (loading) {
-    return <div className="admin-loading">Admin paneli yükleniyor...</div>;
+    return <div className="admin-loading">Dashboard yükleniyor...</div>;
   }
 
   if (user?.email !== 'teyo758@gmail.com') {
@@ -81,147 +119,280 @@ export default function AdminPage() {
     );
   }
 
-  // Gruplama işlemi (user_email üzerinden)
-  const userGroups = {};
-  orders.forEach(order => {
-    const email = order.user_email || 'Bilinmeyen Kullanıcı';
-    if (!userGroups[email]) {
-      userGroups[email] = [];
-    }
-    userGroups[email].push(order);
-  });
+  // Dashboard Calculations
+  const totalRevenue = orders.filter(o => o.status === 'completed' || o.status === 'delivered')
+                             .reduce((sum, o) => sum + Number(o.total_amount), 0);
+  const totalOrdersCount = orders.length;
+  const lowStockProducts = products.filter(p => p.stock_quantity < 15);
+  const recentOrders = orders.slice(0, 5);
 
   return (
-    <div className="admin-page">
-      <div className="admin-header">
-        <h1>Admin Paneli</h1>
-        <div className="admin-tabs">
-          <button 
-            className={`admin-tab ${activeTab === 'orders' ? 'active' : ''}`}
-            onClick={() => setActiveTab('orders')}
-          >
-            📦 Tüm Siparişler
-          </button>
-          <button 
-            className={`admin-tab ${activeTab === 'inventory' ? 'active' : ''}`}
-            onClick={() => setActiveTab('inventory')}
-          >
-            📊 Ürün & Stok Yönetimi
-          </button>
+    <div className="admin-dashboard">
+      <div className="admin-sidebar">
+        <div className="admin-logo">
+          <h2>Admin Panel</h2>
         </div>
+        <nav className="admin-nav">
+          <button className={`admin-nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
+            📊 Genel Bakış
+          </button>
+          <button className={`admin-nav-item ${activeTab === 'orders' ? 'active' : ''}`} onClick={() => setActiveTab('orders')}>
+            📦 Siparişler ({totalOrdersCount})
+          </button>
+          <button className={`admin-nav-item ${activeTab === 'inventory' ? 'active' : ''}`} onClick={() => setActiveTab('inventory')}>
+            🏷️ Ürünler
+          </button>
+          <button className={`admin-nav-item ${activeTab === 'customers' ? 'active' : ''}`} onClick={() => setActiveTab('customers')}>
+            👥 Müşteriler
+          </button>
+        </nav>
       </div>
 
-      <div className="admin-content">
+      <div className="admin-main">
+        {/* DASHBOARD TAB */}
+        {activeTab === 'dashboard' && (
+          <div className="dashboard-content">
+            <h2 className="tab-title">Genel Bakış</h2>
+            <div className="metrics-grid">
+              <div className="metric-card">
+                <h3>Kazanılan Ciro</h3>
+                <div className="metric-value">${totalRevenue.toFixed(2)}</div>
+                <div className="metric-label">Teslim Edilen Siparişlerden</div>
+              </div>
+              <div className="metric-card">
+                <h3>Sipariş Sayısı</h3>
+                <div className="metric-value">{totalOrdersCount}</div>
+                <div className="metric-label">Tüm Zamanlar</div>
+              </div>
+              <div className="metric-card alert">
+                <h3>Kritik Stok</h3>
+                <div className="metric-value">{lowStockProducts.length}</div>
+                <div className="metric-label">15 Adetin Altında Ürün Var</div>
+              </div>
+              <div className="metric-card">
+                <h3>Kayıtlı Müşteri</h3>
+                <div className="metric-value">{customers.length}</div>
+                <div className="metric-label">Sistemde Açılmış Hesap</div>
+              </div>
+            </div>
+
+            <div className="recent-orders-section">
+              <h3>Son Gelen Siparişler</h3>
+              <div className="admin-table-container">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Sipariş ID</th>
+                      <th>Müşteri</th>
+                      <th>Tarih</th>
+                      <th>Tutar</th>
+                      <th>Durum</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentOrders.map(order => (
+                      <tr key={order.id}>
+                        <td>#{order.id.slice(0,8)}</td>
+                        <td>{order.user_email}</td>
+                        <td>{new Date(order.created_at).toLocaleDateString()}</td>
+                        <td>${Number(order.total_amount).toFixed(2)}</td>
+                        <td><span className={`status-badge ${order.status}`}>{order.status}</span></td>
+                      </tr>
+                    ))}
+                    {recentOrders.length === 0 && (
+                      <tr><td colSpan="5" className="text-center">Henüz sipariş yok.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ORDERS TAB */}
         {activeTab === 'orders' && (
-          Object.keys(userGroups).length === 0 ? (
-            <p>Henüz sistemde hiç sipariş bulunmuyor.</p>
-          ) : (
-            Object.keys(userGroups).map(email => (
-            <div key={email} className="admin-user-group">
-              <h3 className="admin-user-title">👤 {email}</h3>
-              <div className="admin-orders-list">
-                {userGroups[email].map(order => (
-                  <div key={order.id} className="admin-order-card">
-                    <div 
-                      className="admin-order-summary"
-                      onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
-                    >
-                      <div className="admin-order-info">
-                        <strong>Sipariş #{order.id}</strong>
-                        <span>Tarih: {new Date(order.created_at).toLocaleDateString('tr-TR')}</span>
-                        <div className="status-dropdown-wrapper" onClick={e => e.stopPropagation()}>
+          <div className="orders-content">
+            <h2 className="tab-title">Tüm Siparişler</h2>
+            <div className="admin-table-container">
+              <table className="admin-table interactive">
+                <thead>
+                  <tr>
+                    <th>Sipariş ID</th>
+                    <th>Tarih</th>
+                    <th>Müşteri</th>
+                    <th>Tutar</th>
+                    <th>Durum</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orders.map(order => (
+                    <React.Fragment key={order.id}>
+                      <tr className="order-row" onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}>
+                        <td>#{order.id.slice(0,8)}</td>
+                        <td>{new Date(order.created_at).toLocaleString('tr-TR')}</td>
+                        <td>{order.user_email}</td>
+                        <td className="font-bold">${Number(order.total_amount).toFixed(2)}</td>
+                        <td onClick={(e) => e.stopPropagation()}>
                           <select 
                             className={`status-select ${order.status}`}
                             value={order.status}
                             onChange={(e) => handleStatusChange(order.id, e.target.value)}
                           >
-                            <option value="pending">⏳ Bekliyor (Pending)</option>
+                            <option value="pending">⏳ Bekliyor</option>
                             <option value="preparing">🍳 Hazırlanıyor</option>
-                            <option value="shipped">🚚 Kargoya Verildi</option>
+                            <option value="shipped">🚚 Kargoda</option>
                             <option value="delivered">✅ Teslim Edildi</option>
                             <option value="completed">🎉 Tamamlandı</option>
-                            <option value="cancelled">❌ İptal Edildi</option>
+                            <option value="cancelled">❌ İptal</option>
                           </select>
-                        </div>
-                      </div>
-                      <div className="admin-order-total">
-                        ${Number(order.total_amount).toFixed(2)}
-                      </div>
-                    </div>
-                    
-                    {expandedOrder === order.id && (
-                      <div className="admin-order-details">
-                        <h4>Sipariş İçeriği:</h4>
-                        {order.order_items && order.order_items.length > 0 ? (
-                          order.order_items.map((item, idx) => (
-                            <div key={idx} className="admin-order-item">
-                              <span>Ürün ID: {item.product_id}</span>
-                              <span>{item.quantity} adet</span>
-                              <span>${Number(item.price).toFixed(2)}</span>
+                        </td>
+                      </tr>
+                      {expandedOrder === order.id && (
+                        <tr className="expanded-row">
+                          <td colSpan="5">
+                            <div className="expanded-order-details">
+                              <h4>Sipariş İçeriği:</h4>
+                              {order.order_items && order.order_items.length > 0 ? (
+                                order.order_items.map((item, idx) => (
+                                  <div key={idx} className="expanded-item">
+                                    <span>ID: {item.product_id?.slice(0,6)}</span>
+                                    <span>{item.quantity} Adet</span>
+                                    <span>Birim Fiyat: ${Number(item.price).toFixed(2)}</span>
+                                    <strong>Ara Toplam: ${(item.quantity * item.price).toFixed(2)}</strong>
+                                  </div>
+                                ))
+                              ) : (
+                                <p>Sipariş detayı bulunamadı.</p>
+                              )}
                             </div>
-                          ))
-                        ) : (
-                          <p>Bu siparişte ürün detayı bulunamadı.</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  ))}
+                  {orders.length === 0 && (
+                    <tr><td colSpan="5" className="text-center">Hiç sipariş bulunamadı.</td></tr>
+                  )}
+                </tbody>
+              </table>
             </div>
-          ))
-          )
+          </div>
         )}
 
+        {/* INVENTORY TAB */}
         {activeTab === 'inventory' && (
-          <div className="admin-inventory-section">
-            <div className="admin-inventory-add">
+          <div className="inventory-content">
+            <h2 className="tab-title">Ürün & Stok Yönetimi</h2>
+            
+            <div className="admin-card add-product-card">
               <h3>Yeni Ürün Ekle</h3>
-              <form onSubmit={handleAddProduct} className="admin-add-product-form">
+              <form onSubmit={handleAddProduct} className="admin-form-row">
                 <input type="text" placeholder="Ürün Adı" required value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} />
-                <input type="text" placeholder="Kategori (örn: Meyve, Sebze)" required value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value})} />
+                <input type="text" placeholder="Kategori" required value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value})} />
                 <input type="number" placeholder="Fiyat ($)" required step="0.01" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: parseFloat(e.target.value)})} />
-                <input type="text" placeholder="Resim URL (isteğe bağlı)" value={newProduct.image_url} onChange={e => setNewProduct({...newProduct, image_url: e.target.value})} />
-                <input type="number" placeholder="Başlangıç Stoğu" required value={newProduct.stock_quantity} onChange={e => setNewProduct({...newProduct, stock_quantity: parseInt(e.target.value)})} />
-                <button type="submit">Ekle</button>
+                <input type="text" placeholder="Görsel URL" value={newProduct.image_url} onChange={e => setNewProduct({...newProduct, image_url: e.target.value})} />
+                <input type="number" placeholder="Stok" required value={newProduct.stock_quantity} onChange={e => setNewProduct({...newProduct, stock_quantity: parseInt(e.target.value)})} />
+                <button type="submit" className="btn-primary">Ekle</button>
               </form>
             </div>
 
-            <div className="admin-inventory-list">
-              <h3>Mevcut Ürünler ve Stoklar</h3>
-              <table className="admin-inventory-table">
-                <thead>
-                  <tr>
-                    <th>Görsel</th>
-                    <th>Ürün Adı</th>
-                    <th>Kategori</th>
-                    <th>Fiyat</th>
-                    <th>Stok</th>
-                    <th>İşlem</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {products.map(product => (
-                    <tr key={product.id}>
-                      <td><img src={product.image_url} alt={product.name} className="admin-inv-img" /></td>
-                      <td>{product.name}</td>
-                      <td>{product.category}</td>
-                      <td>${product.price}</td>
-                      <td>
-                        <input 
-                          type="number" 
-                          className="admin-stock-input"
-                          value={product.stock_quantity ?? 0}
-                          onChange={(e) => handleStockUpdate(product.id, parseInt(e.target.value))}
-                        />
-                      </td>
-                      <td>
-                        <button className="admin-quick-update-btn">Güncellendi</button>
-                      </td>
+            <div className="admin-card margin-top">
+              <h3>Mevcut Ürünler</h3>
+              <div className="admin-table-container">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Görsel</th>
+                      <th>Ürün Adı</th>
+                      <th>Kategori</th>
+                      <th>Fiyat</th>
+                      <th>Stok</th>
+                      <th>Aksiyonlar</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {products.map(product => {
+                      const isEditing = editingProduct?.id === product.id;
+                      return (
+                        <tr key={product.id}>
+                          <td><img src={product.image_url} alt={product.name} className="table-img" /></td>
+                          <td>
+                            {isEditing ? (
+                              <input type="text" value={editingProduct.name} onChange={e => setEditingProduct({...editingProduct, name: e.target.value})} className="edit-input" />
+                            ) : product.name}
+                          </td>
+                          <td>
+                            {isEditing ? (
+                              <input type="text" value={editingProduct.category} onChange={e => setEditingProduct({...editingProduct, category: e.target.value})} className="edit-input" />
+                            ) : product.category}
+                          </td>
+                          <td>
+                            {isEditing ? (
+                              <input type="number" step="0.01" value={editingProduct.price} onChange={e => setEditingProduct({...editingProduct, price: parseFloat(e.target.value)})} className="edit-input small" />
+                            ) : `$${product.price}`}
+                          </td>
+                          <td>
+                            {isEditing ? (
+                              <input type="number" value={editingProduct.stock_quantity} onChange={e => setEditingProduct({...editingProduct, stock_quantity: parseInt(e.target.value)})} className="edit-input small" />
+                            ) : (
+                              <span className={product.stock_quantity < 15 ? 'text-danger font-bold' : ''}>{product.stock_quantity}</span>
+                            )}
+                          </td>
+                          <td className="actions-cell">
+                            {isEditing ? (
+                              <>
+                                <button className="btn-success" onClick={saveProductEdit}>Kaydet</button>
+                                <button className="btn-secondary" onClick={() => setEditingProduct(null)}>İptal</button>
+                              </>
+                            ) : (
+                              <>
+                                <button className="btn-edit" onClick={() => setEditingProduct(product)}>Düzenle</button>
+                                <button className="btn-danger" onClick={() => handleDeleteProduct(product.id)}>Sil</button>
+                              </>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* CUSTOMERS TAB */}
+        {activeTab === 'customers' && (
+          <div className="customers-content">
+            <h2 className="tab-title">Kayıtlı Profil Verileri</h2>
+            <div className="admin-card">
+              <div className="admin-table-container">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Kullanıcı ID</th>
+                      <th>İsim Soyisim</th>
+                      <th>Telefon</th>
+                      <th>Teslimat Adresi</th>
+                      <th>Oluşturulma</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {customers.map(c => (
+                      <tr key={c.id}>
+                        <td className="text-muted" title={c.id}>{c.id.slice(0,8)}...</td>
+                        <td>{c.full_name || '-'}</td>
+                        <td>{c.phone || '-'}</td>
+                        <td className="address-col">{c.delivery_address || '-'}</td>
+                        <td>{new Date(c.created_at).toLocaleDateString()}</td>
+                      </tr>
+                    ))}
+                    {customers.length === 0 && (
+                      <tr><td colSpan="5" className="text-center">Kayıtlı tam profil bulunamadı. (Sistemdeki auth accountları hariç)</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}

@@ -112,6 +112,19 @@ export async function saveProfile(userId, profileData) {
   return true;
 }
 
+export async function fetchAllProfiles() {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching all profiles:', error);
+    return [];
+  }
+  return data || [];
+}
+
 // =============================================
 // MOBILE APP BRIDGE FUNCTIONS
 // Mobil uygulamanın entegrasyon adaptörü tarafından kullanılır.
@@ -189,6 +202,38 @@ export async function updateOrderStatus(orderId, status) {
 
   if (error) {
     console.error('Error updating order status:', error);
+    return false;
+  }
+  return true;
+}
+
+/**
+ * [WEB/ADMIN] Ürün sil (Yalnızca yetkililer için RLS varsa geçerlidir)
+ */
+export async function deleteProduct(productId) {
+  const { error } = await supabase
+    .from('products')
+    .delete()
+    .eq('id', productId);
+
+  if (error) {
+    console.error('Error deleting product:', error);
+    return false;
+  }
+  return true;
+}
+
+/**
+ * [WEB/ADMIN] Ürün özelliklerini güncelle (İsim, fiyat, kategori vb.)
+ */
+export async function updateProductFields(productId, productData) {
+  const { error } = await supabase
+    .from('products')
+    .update(productData)
+    .eq('id', productId);
+
+  if (error) {
+    console.error('Error updating product fields:', error);
     return false;
   }
   return true;
