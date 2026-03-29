@@ -162,51 +162,63 @@ export default function AdminPage() {
         {/* DASHBOARD TAB */}
         {activeTab === 'dashboard' && (
           <div className="dashboard-content">
-            <h2 className="tab-title">Genel Bakış</h2>
+            <h1 className="tab-title">Hoş geldiniz, Yönetici</h1>
+            <p className="tab-subtitle">Mağazanızda bugün olup biten her şeyi buradan takip edebilirsiniz.</p>
+            
             <div className="metrics-grid">
               <div className="metric-card">
-                <h3>Kazanılan Ciro</h3>
-                <div className="metric-value">${(totalRevenue || 0).toFixed(2)}</div>
-                <div className="metric-label">Teslim Edilen Siparişlerden</div>
+                <h3>Kazanılan Toplam Ciro</h3>
+                <div className="metric-value-container">
+                  <div className="metric-value">${(totalRevenue || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                </div>
+                <div className="metric-label">Son 30 gündeki tamamlanan siparişler</div>
               </div>
               <div className="metric-card">
-                <h3>Sipariş Sayısı</h3>
-                <div className="metric-value">{totalOrdersCount}</div>
-                <div className="metric-label">Tüm Zamanlar</div>
+                <h3>Toplam Sipariş</h3>
+                <div className="metric-value-container">
+                  <div className="metric-value">{totalOrdersCount}</div>
+                </div>
+                <div className="metric-label">Sisteme düşen tüm talepler</div>
               </div>
-              <div className="metric-card alert">
-                <h3>Kritik Stok</h3>
-                <div className="metric-value">{lowStockProducts.length}</div>
-                <div className="metric-label">15 Adetin Altında Ürün Var</div>
+              <div className={lowStockProducts.length > 0 ? "metric-card alert" : "metric-card"}>
+                <h3>Kritik Stok Uyarıları</h3>
+                <div className="metric-value-container">
+                  <div className="metric-value">{(lowStockProducts || []).length} Ürün</div>
+                </div>
+                <div className="metric-label">Stok seviyesi 15'in altına düşenler</div>
               </div>
               <div className="metric-card">
-                <h3>Kayıtlı Müşteri</h3>
-                <div className="metric-value">{customersArray.length}</div>
-                <div className="metric-label">Sistemde Açılmış Hesap</div>
+                <h3>Aktif Müşteri Hesabı</h3>
+                <div className="metric-value-container">
+                  <div className="metric-value">{(customersArray || []).length}</div>
+                </div>
+                <div className="metric-label">Doğrulanmış ve kayıtlı profiller</div>
               </div>
             </div>
 
-            <div className="recent-orders-section">
-              <h3>Son Gelen Siparişler</h3>
+            <div className="admin-card">
+              <div className="admin-card-header">
+                <h3>Son Siparişler</h3>
+              </div>
               <div className="admin-table-container">
                 <table className="admin-table">
                   <thead>
                     <tr>
-                      <th>Sipariş ID</th>
-                      <th>Müşteri</th>
+                      <th>Sipariş Numarası</th>
+                      <th>Müşteri E-Posta</th>
                       <th>Tarih</th>
-                      <th>Tutar</th>
-                      <th>Durum</th>
+                      <th>Ödeme Tutarı</th>
+                      <th>Durum Bilgisi</th>
                     </tr>
                   </thead>
                   <tbody>
                     {recentOrders.map(order => (
                       <tr key={order.id}>
-                        <td>#{order.id?.toString().slice(0,8) || 'N/A'}</td>
+                        <td className="font-bold">ORD-{order.id?.toString().slice(0,8).toUpperCase() || 'N/A'}</td>
                         <td>{order.user_email || 'Bilinmeyen'}</td>
                         <td>{order.created_at ? new Date(order.created_at).toLocaleDateString() : '-'}</td>
-                        <td>${Number(order.total_amount || 0).toFixed(2)}</td>
-                        <td><span className={`status-badge ${order.status || 'pending'}`}>{order.status || 'pending'}</span></td>
+                        <td className="font-bold">${Number(order.total_amount || 0).toFixed(2)}</td>
+                        <td><span className={`status-badge ${order.status || 'pending'}`}>{order.status || 'beklemede'}</span></td>
                       </tr>
                     ))}
                     {recentOrders.length === 0 && (
@@ -222,69 +234,68 @@ export default function AdminPage() {
         {/* ORDERS TAB */}
         {activeTab === 'orders' && (
           <div className="orders-content">
-            <h2 className="tab-title">Tüm Siparişler</h2>
-            <div className="admin-table-container">
-              <table className="admin-table interactive">
-                <thead>
-                  <tr>
-                    <th>Sipariş ID</th>
-                    <th>Tarih</th>
-                    <th>Müşteri</th>
-                    <th>Tutar</th>
-                    <th>Durum</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ordersArray.map(order => (
-                    <React.Fragment key={order.id}>
-                      <tr className="order-row" onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}>
-                        <td>#{order.id?.toString().slice(0,8) || 'N/A'}</td>
-                        <td>{order.created_at ? new Date(order.created_at).toLocaleString('tr-TR') : '-'}</td>
-                        <td>{order.user_email || 'Bilinmeyen'}</td>
-                        <td className="font-bold">${Number(order.total_amount || 0).toFixed(2)}</td>
-                        <td onClick={(e) => e.stopPropagation()}>
-                          <select 
-                            className={`status-select ${order.status || 'pending'}`}
-                            value={order.status || 'pending'}
-                            onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                          >
-                            <option value="pending">⏳ Bekliyor</option>
-                            <option value="preparing">🍳 Hazırlanıyor</option>
-                            <option value="shipped">🚚 Kargoya Verildi</option>
-                            <option value="delivered">✅ Teslim Edildi</option>
-                            <option value="completed">🎉 Tamamlandı</option>
-                            <option value="cancelled">❌ İptal Edildi</option>
-                          </select>
-                        </td>
-                      </tr>
-                      {expandedOrder === order.id && (
-                        <tr className="expanded-row">
-                          <td colSpan="5">
-                            <div className="expanded-order-details">
-                              <h4>Sipariş İçeriği:</h4>
-                              {order.order_items && order.order_items.length > 0 ? (
-                                order.order_items.map((item, idx) => (
-                                  <div key={idx} className="expanded-item">
-                                    <span>ID: {item.product_id?.toString().slice(0,6) || 'N/A'}</span>
-                                    <span>{item.quantity} Adet</span>
-                                    <span>Birim Fiyat: ${Number(item.price || 0).toFixed(2)}</span>
-                                    <strong>Ara Toplam: ${(Number(item.quantity || 0) * Number(item.price || 0)).toFixed(2)}</strong>
-                                  </div>
-                                ))
-                              ) : (
-                                <p>Sipariş detayı bulunamadı.</p>
-                              )}
-                            </div>
+            <h1 className="tab-title">Sipariş Yönetimi</h1>
+            <p className="tab-subtitle">Tüm siparişlerin durumunu güncelleyebilir ve detaylarını inceleyebilirsiniz.</p>
+            
+            <div className="admin-card">
+              <div className="admin-card-header">
+                <h3>Tüm Sipariş Listesi</h3>
+              </div>
+              <div className="admin-table-container">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Tarih</th>
+                      <th>Müşteri</th>
+                      <th>Tutar</th>
+                      <th>İşlem / Durum</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ordersArray.map(order => (
+                      <React.Fragment key={order.id}>
+                        <tr className="order-row" onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)} style={{cursor: 'pointer'}}>
+                          <td className="font-bold">#{order.id?.toString().slice(0,8).toUpperCase()}</td>
+                          <td>{order.created_at ? new Date(order.created_at).toLocaleString('tr-TR') : '-'}</td>
+                          <td>{order.user_email}</td>
+                          <td className="font-bold">${Number(order.total_amount || 0).toFixed(2)}</td>
+                          <td onClick={(e) => e.stopPropagation()}>
+                            <select 
+                              className="status-select"
+                              value={order.status || 'pending'}
+                              onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                            >
+                              <option value="pending">⏳ Beklemede</option>
+                              <option value="preparing">🍳 Hazırlanıyor</option>
+                              <option value="shipped">🚚 Kargoda</option>
+                              <option value="delivered">✅ Teslim Edildi</option>
+                              <option value="completed">🎉 Tamamlandı</option>
+                              <option value="cancelled">❌ İptal Edildi</option>
+                            </select>
                           </td>
                         </tr>
-                      )}
-                    </React.Fragment>
-                  ))}
-                  {ordersArray.length === 0 && (
-                    <tr><td colSpan="5" className="text-center">Hiç sipariş bulunamadı.</td></tr>
-                  )}
-                </tbody>
-              </table>
+                        {expandedOrder === order.id && (
+                          <tr className="expanded-row">
+                            <td colSpan="5">
+                              <div className="expanded-order-details">
+                                <h4>Ürün Detayları</h4>
+                                {order.order_items?.map((item, idx) => (
+                                  <div key={idx} className="expanded-item">
+                                    <span>{item.quantity}x Ürün ID: {item.product_id?.slice(0,8)}</span>
+                                    <span>Birim: ${Number(item.price || 0).toFixed(2)}</span>
+                                    <strong>Toplam: ${(item.quantity * item.price).toFixed(2)}</strong>
+                                  </div>
+                                ))}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
@@ -292,22 +303,34 @@ export default function AdminPage() {
         {/* INVENTORY TAB */}
         {activeTab === 'inventory' && (
           <div className="inventory-content">
-            <h2 className="tab-title">Ürün & Stok Yönetimi</h2>
+            <h1 className="tab-title">Stok ve Envanter</h1>
+            <p className="tab-subtitle">Mağazanızdaki ürünleri yönetin, fiyat ve stok güncellemeleri yapın.</p>
             
-            <div className="admin-card add-product-card">
-              <h3>Yeni Ürün Ekle</h3>
+            <div className="admin-card" style={{padding: '32px', marginBottom: '32px'}}>
+              <div className="admin-card-header" style={{padding: '0 0 24px 0'}}>
+                <h3>Yeni Ürün Ekle</h3>
+              </div>
               <form onSubmit={handleAddProduct} className="admin-form-row">
-                <input type="text" placeholder="Ürün Adı" required value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} />
-                <input type="text" placeholder="Kategori" required value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value})} />
-                <input type="number" placeholder="Fiyat ($)" required step="0.01" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: parseFloat(e.target.value)})} />
-                <input type="text" placeholder="Görsel URL" value={newProduct.image_url} onChange={e => setNewProduct({...newProduct, image_url: e.target.value})} />
-                <input type="number" placeholder="Stok" required value={newProduct.stock_quantity} onChange={e => setNewProduct({...newProduct, stock_quantity: parseInt(e.target.value)})} />
-                <button type="submit" className="btn-primary">Ekle</button>
+                <div>
+                  <label style={{fontSize: '14px', fontWeight: '500'}}>Ürün Adı</label>
+                  <input type="text" placeholder="Örn: Organik Elma" required value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} />
+                </div>
+                <div>
+                  <label style={{fontSize: '14px', fontWeight: '500'}}>Kategori</label>
+                  <input type="text" placeholder="Meyve" required value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value})} />
+                </div>
+                <div>
+                  <label style={{fontSize: '14px', fontWeight: '500'}}>Fiyat</label>
+                  <input type="number" step="0.01" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: parseFloat(e.target.value)})} />
+                </div>
+                <button type="submit" className="btn-primary">Ürünü Kaydet</button>
               </form>
             </div>
 
-            <div className="admin-card margin-top">
-              <h3>Mevcut Ürünler</h3>
+            <div className="admin-card">
+              <div className="admin-card-header">
+                <h3>Ürün Listesi</h3>
+              </div>
               <div className="admin-table-container">
                 <table className="admin-table">
                   <thead>
@@ -317,7 +340,7 @@ export default function AdminPage() {
                       <th>Kategori</th>
                       <th>Fiyat</th>
                       <th>Stok</th>
-                      <th>Aksiyonlar</th>
+                      <th>İşlem</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -325,40 +348,22 @@ export default function AdminPage() {
                       const isEditing = editingProduct?.id === product.id;
                       return (
                         <tr key={product.id}>
-                          <td><img src={product.image_url || 'https://via.placeholder.com/50'} alt={product.name} className="table-img" /></td>
+                          <td><img src={product.image_url} alt={product.name} className="table-img" /></td>
+                          <td>{isEditing ? <input className="edit-input" value={editingProduct.name} onChange={e => setEditingProduct({...editingProduct, name: e.target.value})} /> : product.name}</td>
+                          <td>{isEditing ? <input className="edit-input" value={editingProduct.category} onChange={e => setEditingProduct({...editingProduct, category: e.target.value})} /> : product.category}</td>
+                          <td>{isEditing ? <input className="edit-input" type="number" step="0.01" value={editingProduct.price} onChange={e => setEditingProduct({...editingProduct, price: parseFloat(e.target.value)})} /> : `$${Number(product.price || 0).toFixed(2)}`}</td>
+                          <td style={{fontWeight: '700', color: (product.stock_quantity < 15) ? '#b42318' : 'inherit'}}>{isEditing ? <input className="edit-input" type="number" value={editingProduct.stock_quantity} onChange={e => setEditingProduct({...editingProduct, stock_quantity: parseInt(e.target.value)})} /> : product.stock_quantity}</td>
                           <td>
                             {isEditing ? (
-                              <input type="text" value={editingProduct.name} onChange={e => setEditingProduct({...editingProduct, name: e.target.value})} className="edit-input" />
-                            ) : product.name}
-                          </td>
-                          <td>
-                            {isEditing ? (
-                              <input type="text" value={editingProduct.category} onChange={e => setEditingProduct({...editingProduct, category: e.target.value})} className="edit-input" />
-                            ) : product.category}
-                          </td>
-                          <td>
-                            {isEditing ? (
-                              <input type="number" step="0.01" value={editingProduct.price} onChange={e => setEditingProduct({...editingProduct, price: parseFloat(e.target.value)})} className="edit-input small" />
-                            ) : `$${Number(product.price || 0).toFixed(2)}`}
-                          </td>
-                          <td>
-                            {isEditing ? (
-                              <input type="number" value={editingProduct.stock_quantity} onChange={e => setEditingProduct({...editingProduct, stock_quantity: parseInt(e.target.value)})} className="edit-input small" />
+                              <div style={{display:'flex', gap: '8px'}}>
+                                <button className="btn-primary" onClick={saveProductEdit} style={{padding: '6px 12px'}}>Kaydet</button>
+                                <button className="btn-secondary" onClick={() => setEditingProduct(null)} style={{padding: '6px 12px'}}>İptal</button>
+                              </div>
                             ) : (
-                              <span className={(product.stock_quantity || 0) < 15 ? 'text-danger font-bold' : ''}>{product.stock_quantity || 0}</span>
-                            )}
-                          </td>
-                          <td className="actions-cell">
-                            {isEditing ? (
-                              <>
-                                <button className="btn-success" onClick={saveProductEdit}>Kaydet</button>
-                                <button className="btn-secondary" onClick={() => setEditingProduct(null)}>İptal</button>
-                              </>
-                            ) : (
-                              <>
-                                <button className="btn-edit" onClick={() => setEditingProduct(product)}>Düzenle</button>
+                              <div style={{display:'flex', gap: '8px'}}>
+                                <button className="btn-secondary" onClick={() => setEditingProduct(product)}>Düzenle</button>
                                 <button className="btn-danger" onClick={() => handleDeleteProduct(product.id)}>Sil</button>
-                              </>
+                              </div>
                             )}
                           </td>
                         </tr>
@@ -374,32 +379,35 @@ export default function AdminPage() {
         {/* CUSTOMERS TAB */}
         {activeTab === 'customers' && (
           <div className="customers-content">
-            <h2 className="tab-title">Kayıtlı Profil Verileri</h2>
+            <h1 className="tab-title">Müşteriler</h1>
+            <p className="tab-subtitle">Mağazanıza kayıt olan kullanıcıların profil ve adres bilgilerine ulaşın.</p>
+            
             <div className="admin-card">
+              <div className="admin-card-header">
+                <h3>Kayıtlı Kullanıcı Rehberi</h3>
+              </div>
               <div className="admin-table-container">
                 <table className="admin-table">
                   <thead>
                     <tr>
-                      <th>Kullanıcı ID</th>
-                      <th>İsim Soyisim</th>
+                      <th>Müşteri</th>
                       <th>Telefon</th>
                       <th>Teslimat Adresi</th>
-                      <th>Oluşturulma</th>
+                      <th>Kayıt Tarihi</th>
                     </tr>
                   </thead>
                   <tbody>
                     {customersArray.map(c => (
                       <tr key={c.id}>
-                        <td className="text-muted" title={c.id}>{c.id?.toString().slice(0,8) || 'N/A'}...</td>
-                        <td>{c.full_name || '-'}</td>
+                        <td>
+                          <div style={{fontWeight: '600', color: '#101828'}}>{c.full_name || 'İsimsiz Müşteri'}</div>
+                          <div style={{fontSize: '12px', color: '#667085'}}>{c.id?.slice(0,8)}</div>
+                        </td>
                         <td>{c.phone || '-'}</td>
-                        <td className="address-col">{c.delivery_address || '-'}</td>
+                        <td title={c.delivery_address}>{c.delivery_address ? (c.delivery_address.slice(0,40) + '...') : '-'}</td>
                         <td>{c.created_at ? new Date(c.created_at).toLocaleDateString() : '-'}</td>
                       </tr>
                     ))}
-                    {customersArray.length === 0 && (
-                      <tr><td colSpan="5" className="text-center">Kayıtlı tam profil bulunamadı.</td></tr>
-                    )}
                   </tbody>
                 </table>
               </div>
