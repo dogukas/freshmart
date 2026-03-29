@@ -70,3 +70,85 @@ export async function fetchUserOrders(userId) {
   
   return data;
 }
+
+// =============================================
+// MOBILE APP BRIDGE FUNCTIONS
+// Mobil uygulamanın entegrasyon adaptörü tarafından kullanılır.
+// Ayrıntılar için: INTEGRATION_HUB.md
+// =============================================
+
+/**
+ * [MOBİL] Tüm siparişleri getir (admin görünümü — service_role key gerekir)
+ * Mobil endpoint: GET /rest/v1/orders?select=*,order_items(*)&order=created_at.desc
+ */
+export async function fetchAllOrdersAdmin() {
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*, order_items(*)')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching all orders:', error);
+    return [];
+  }
+  return data;
+}
+
+/**
+ * [MOBİL] Ürün stoğunu güncelle ("E-Ticarete Aktar" sonrası)
+ * Mobil endpoint: PATCH /rest/v1/products?id=eq.<id>
+ */
+export async function updateProductStock(productId, newQty) {
+  const { error } = await supabase
+    .from('products')
+    .update({ stock_quantity: newQty })
+    .eq('id', productId);
+
+  if (error) {
+    console.error('Error updating stock:', error);
+    return false;
+  }
+  return true;
+}
+
+/**
+ * [MOBİL] Mobil uygulamadan yeni ürün ekle
+ * Mobil endpoint: POST /rest/v1/products
+ */
+export async function addProduct(productData) {
+  const { data, error } = await supabase
+    .from('products')
+    .insert([{
+      ...productData,
+      stock_quantity: productData.stock_quantity || 100,
+      is_active: true,
+      rating: productData.rating || 5.0,
+      reviews: productData.reviews || 0
+    }])
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error adding product:', error);
+    return null;
+  }
+  return data;
+}
+
+/**
+ * [MOBİL] Sipariş durumunu güncelle ("Kargoya Verildi", "Teslim Edildi" vs.)
+ * Mobil endpoint: PATCH /rest/v1/orders?id=eq.<id>
+ * @param {string} status - "pending" | "shipped" | "delivered" | "completed"
+ */
+export async function updateOrderStatus(orderId, status) {
+  const { error } = await supabase
+    .from('orders')
+    .update({ status })
+    .eq('id', orderId);
+
+  if (error) {
+    console.error('Error updating order status:', error);
+    return false;
+  }
+  return true;
+}
