@@ -301,6 +301,12 @@
   margin-top: 16px !important;
 }
 
+.no-data {
+  color: var(--gray-400);
+  font-size: 14px;
+  font-weight: 500;
+}
+
 /* TABLES V2 */
 .admin-card {
   background: #ffffff;
