@@ -47,6 +47,14 @@ export default function CheckoutFlow() {
 
   const handleCompleteOrder = async (e) => {
     e.preventDefault();
+    if (!user) {
+      showToast('Sipariş vermek için giriş yapmalısınız.', 'error');
+      return;
+    }
+    if (cartItems.length === 0) {
+      showToast('Sepetiniz boş!', 'error');
+      return;
+    }
     setLoading(true);
     
     try {
@@ -58,6 +66,7 @@ export default function CheckoutFlow() {
       if (success) {
         setCheckoutOpen(false);
         setStep(1);
+        setAddress({ fullName: user?.email?.split('@')[0] || '', street: '', city: '', phone: '' });
       }
     } catch (err) {
       console.error('Checkout error:', err);

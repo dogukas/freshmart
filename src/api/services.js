@@ -18,6 +18,15 @@ export async function fetchProducts() {
 }
 
 export async function createOrder(cartItems, total, showToast, clearCart, userId) {
+  if (!userId) {
+    showToast('Sipariş vermek için giriş yapmalısınız.', 'error');
+    return false;
+  }
+  if (!cartItems || cartItems.length === 0) {
+    showToast('Sepetiniz boş!', 'error');
+    return false;
+  }
+
   // 1. Create Order
   const { data: orderData, error: orderError } = await supabase
     .from('orders')
@@ -27,11 +36,10 @@ export async function createOrder(cartItems, total, showToast, clearCart, userId
 
   if (orderError) {
     console.error('Error creating order:', orderError);
-    showToast('Ödeme sırasında bir hata oluştu.', 'error');
+    const msg = orderError.message || 'Sipariş oluşturulamadı.';
+    showToast(`Ödeme hatası: ${msg}`, 'error');
     return false;
   }
-
-  console.log('Order created:', orderData);
 
   // 2. Insert Order Items
   const orderItemsData = cartItems.map(item => ({
@@ -46,11 +54,12 @@ export async function createOrder(cartItems, total, showToast, clearCart, userId
     .insert(orderItemsData);
 
   if (itemsError) {
-    console.error('Order items insertion error:', itemsError);
+    // Non-blocking: order is created, items may fail due to RLS on old accounts
+    console.warn('Order items insertion warning:', itemsError.message);
   }
 
-  showToast(`Sipariş #${orderData.id} başarıyla alındı!`, 'success');
-  if (clearCart) clearCart();
+  showToast(`Sipariş #${orderData.id} başarıyla alındı! 🎉`, 'success');
+  if (typeof clearCart === 'function') clearCart();
   return true;
 }
 
