@@ -1,0 +1,10 @@
+.app {
+  min-height: 100vh;
+  background: #f2f4f0;
+}
+
+.app__main {
+  margin-top: 116px; /* navbar 64px + subnav 52px */
+  display: flex;
+  flex-direction: column;
+}

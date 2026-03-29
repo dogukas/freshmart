@@ -1,0 +1,43 @@
+/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --green-dark: #1a4a2e;
+  --green-primary: #2d6a4f;
+  --green-accent: #52b788;
+  --green-light: #74c69d;
+  --green-neon: #6edb6e;
+  --cream: #f8f9f0;
+  --white: #ffffff;
+  --gray-50: #f8f8f8;
+  --gray-100: #f0f0f0;
+  --gray-200: #e4e4e4;
+  --gray-300: #c8c8c8;
+  --gray-600: #6b7280;
+  --gray-800: #1f2937;
+  --yellow-promo: #f5e642;
+  --pink-promo: #e8455a;
+  --radius-sm: 12px;
+  --radius-md: 20px;
+  --radius-lg: 28px;
+  --radius-xl: 36px;
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 20px rgba(0,0,0,0.10);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.14);
+  --font-heading: 'Outfit', sans-serif;
+  --font-body: 'Inter', sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  background: #f2f4f0;
+  color: var(--gray-800);
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+button { cursor: pointer; border: none; outline: none; font-family: var(--font-body); }
+img { max-width: 100%; display: block; }
+a { text-decoration: none; color: inherit; }

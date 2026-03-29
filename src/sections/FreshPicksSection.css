@@ -1,0 +1,83 @@
+.fresh-picks-section {
+  padding: 44px 40px 40px;
+  background: var(--gray-50);
+}
+
+/* Main layout - left grid + right hero card */
+.fresh-picks__layout {
+  display: flex;
+  gap: 20px;
+  align-items: stretch;
+}
+
+/* Left: 2-col grid */
+.fresh-picks__grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+/* Right: tall hero card */
+.fresh-picks__side-hero {
+  flex: 0 0 300px;
+  width: 300px;
+}
+
+.fresh-hero-card {
+  background: linear-gradient(160deg, #d0eaff 0%, #bfe0ff 40%, #d8f0e8 100%);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  height: 100%;
+  min-height: 600px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.fresh-hero-card__image {
+  width: 100%;
+  height: 55%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.fresh-hero-card__overlay {
+  flex: 1;
+  padding: 28px 28px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  justify-content: flex-end;
+}
+
+.fresh-hero-card__heading {
+  font-family: var(--font-heading);
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1.15;
+  color: var(--gray-800);
+}
+
+.fresh-hero-card__sub {
+  font-size: 14px;
+  color: var(--gray-600);
+  line-height: 1.6;
+}
+
+.fresh-hero-card__btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--gray-800);
+  color: white;
+  border-radius: 50px;
+  padding: 13px 22px;
+  font-size: 14px;
+  font-weight: 700;
+  width: fit-content;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.fresh-hero-card__btn:hover { background: var(--green-primary); }
