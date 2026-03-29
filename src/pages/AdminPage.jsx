@@ -138,282 +138,365 @@ export default function AdminPage() {
 
   return (
     <div className="admin-dashboard">
+      {/* SIDEBAR V2 */}
       <div className="admin-sidebar">
-        <div className="admin-logo">
-          <h2>Admin Panel</h2>
+        <div className="sidebar-container">
+          <div className="admin-logo">
+            <div className="logo-icon">🍀</div>
+            <h2>FreshMart</h2>
+          </div>
+          
+          <nav className="admin-nav">
+            <button className={`admin-nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
+              <span className="nav-icon">📊</span> <span>Genel Bakış</span>
+            </button>
+            <button className={`admin-nav-item ${activeTab === 'orders' ? 'active' : ''}`} onClick={() => setActiveTab('orders')}>
+              <span className="nav-icon">📦</span> <span>Siparişler</span>
+            </button>
+            <button className={`admin-nav-item ${activeTab === 'inventory' ? 'active' : ''}`} onClick={() => setActiveTab('inventory')}>
+              <span className="nav-icon">🏷️</span> <span>Ürün & Stok</span>
+            </button>
+            <button className={`admin-nav-item ${activeTab === 'customers' ? 'active' : ''}`} onClick={() => setActiveTab('customers')}>
+              <span className="nav-icon">👥</span> <span>Müşteriler</span>
+            </button>
+          </nav>
         </div>
-        <nav className="admin-nav">
-          <button className={`admin-nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
-            📊 Genel Bakış
-          </button>
-          <button className={`admin-nav-item ${activeTab === 'orders' ? 'active' : ''}`} onClick={() => setActiveTab('orders')}>
-            📦 Siparişler ({totalOrdersCount})
-          </button>
-          <button className={`admin-nav-item ${activeTab === 'inventory' ? 'active' : ''}`} onClick={() => setActiveTab('inventory')}>
-            🏷️ Ürünler
-          </button>
-          <button className={`admin-nav-item ${activeTab === 'customers' ? 'active' : ''}`} onClick={() => setActiveTab('customers')}>
-            👥 Müşteriler
-          </button>
-        </nav>
+
+        <div className="sidebar-footer">
+          <div className="user-profile">
+            <div className="user-avatar">{user?.email?.charAt(0).toUpperCase()}</div>
+            <div className="user-info">
+              <span className="user-name">Yönetici</span>
+              <span className="user-email">{user?.email}</span>
+            </div>
+            <button className="settings-btn" title="Ayarlar">⚙️</button>
+          </div>
+        </div>
       </div>
 
       <div className="admin-main">
-        {/* DASHBOARD TAB */}
-        {activeTab === 'dashboard' && (
-          <div className="dashboard-content">
-            <h1 className="tab-title">Hoş geldiniz, Yönetici</h1>
-            <p className="tab-subtitle">Mağazanızda bugün olup biten her şeyi buradan takip edebilirsiniz.</p>
-            
-            <div className="metrics-grid">
-              <div className="metric-card">
-                <h3>Kazanılan Toplam Ciro</h3>
-                <div className="metric-value-container">
-                  <div className="metric-value">${(totalRevenue || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                </div>
-                <div className="metric-label">Son 30 gündeki tamamlanan siparişler</div>
-              </div>
-              <div className="metric-card">
-                <h3>Toplam Sipariş</h3>
-                <div className="metric-value-container">
-                  <div className="metric-value">{totalOrdersCount}</div>
-                </div>
-                <div className="metric-label">Sisteme düşen tüm talepler</div>
-              </div>
-              <div className={lowStockProducts.length > 0 ? "metric-card alert" : "metric-card"}>
-                <h3>Kritik Stok Uyarıları</h3>
-                <div className="metric-value-container">
-                  <div className="metric-value">{(lowStockProducts || []).length} Ürün</div>
-                </div>
-                <div className="metric-label">Stok seviyesi 15'in altına düşenler</div>
-              </div>
-              <div className="metric-card">
-                <h3>Aktif Müşteri Hesabı</h3>
-                <div className="metric-value-container">
-                  <div className="metric-value">{(customersArray || []).length}</div>
-                </div>
-                <div className="metric-label">Doğrulanmış ve kayıtlı profiller</div>
-              </div>
+        {/* TOP HEADER BAR V2 */}
+        <header className="main-header">
+          <div className="header-left">
+            <div className="breadcrumbs">
+              <span>Yönetim</span>
+              <span className="divider">/</span>
+              <span className="current">{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</span>
             </div>
-
-            <div className="admin-card">
-              <div className="admin-card-header">
-                <h3>Son Siparişler</h3>
-              </div>
-              <div className="admin-table-container">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Sipariş Numarası</th>
-                      <th>Müşteri E-Posta</th>
-                      <th>Tarih</th>
-                      <th>Ödeme Tutarı</th>
-                      <th>Durum Bilgisi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentOrders.map(order => (
-                      <tr key={order.id}>
-                        <td className="font-bold">ORD-{order.id?.toString().slice(0,8).toUpperCase() || 'N/A'}</td>
-                        <td>{order.user_email || 'Bilinmeyen'}</td>
-                        <td>{order.created_at ? new Date(order.created_at).toLocaleDateString() : '-'}</td>
-                        <td className="font-bold">${Number(order.total_amount || 0).toFixed(2)}</td>
-                        <td><span className={`status-badge ${order.status || 'pending'}`}>{order.status || 'beklemede'}</span></td>
-                      </tr>
-                    ))}
-                    {recentOrders.length === 0 && (
-                      <tr><td colSpan="5" className="text-center">Henüz sipariş yok.</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <h1 className="header-title">
+              {activeTab === 'dashboard' && 'Mağaza Özeti'}
+              {activeTab === 'orders' && 'Sipariş Yönetimi'}
+              {activeTab === 'inventory' && 'Ürün Kataloğu'}
+              {activeTab === 'customers' && 'Müşteri Rehberi'}
+            </h1>
           </div>
-        )}
+          <div className="header-actions">
+            <button className="btn-secondary">
+              <span className="icon">⬇️</span> Dışa Aktar
+            </button>
+            {activeTab === 'inventory' && (
+              <button className="btn-primary">
+                <span className="icon">➕</span> Yeni Ürün
+              </button>
+            )}
+          </div>
+        </header>
 
-        {/* ORDERS TAB */}
-        {activeTab === 'orders' && (
-          <div className="orders-content">
-            <h1 className="tab-title">Sipariş Yönetimi</h1>
-            <p className="tab-subtitle">Tüm siparişlerin durumunu güncelleyebilir ve detaylarını inceleyebilirsiniz.</p>
-            
-            <div className="admin-card">
-              <div className="admin-card-header">
-                <h3>Tüm Sipariş Listesi</h3>
+        {/* CONTENT V2 */}
+        <div className="tab-content-wrapper">
+          {/* DASHBOARD TAB */}
+          {activeTab === 'dashboard' && (
+            <div className="dashboard-content">
+              <div className="metrics-grid">
+                <div className="metric-card">
+                  <div className="metric-header">
+                    <h3>Kazanılan Toplam Ciro</h3>
+                    <span className="trend positive">↑ 12.5%</span>
+                  </div>
+                  <div className="metric-value-container">
+                    <div className="metric-value">${(totalRevenue || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+                  </div>
+                  <div className="metric-label">Son 30 gündeki ciro</div>
+                </div>
+                <div className="metric-card">
+                  <div className="metric-header">
+                    <h3>Toplam Sipariş</h3>
+                    <span className="trend positive">↑ 8.2%</span>
+                  </div>
+                  <div className="metric-value-container">
+                    <div className="metric-value">{totalOrdersCount}</div>
+                  </div>
+                  <div className="metric-label">Tamamlanan talepler</div>
+                </div>
+                <div className={lowStockProducts.length > 0 ? "metric-card alert" : "metric-card"}>
+                  <div className="metric-header">
+                    <h3>Kritik Stok Uyarıları</h3>
+                  </div>
+                  <div className="metric-value-container">
+                    <div className="metric-value">{(lowStockProducts || []).length} Ürün</div>
+                  </div>
+                  <div className="metric-label">Stok seviyesi 15'in altında</div>
+                </div>
+                <div className="metric-card">
+                  <div className="metric-header">
+                    <h3>Aktif Müşteri</h3>
+                    <span className="trend positive">↑ 4.1%</span>
+                  </div>
+                  <div className="metric-value-container">
+                    <div className="metric-value">{(customersArray || []).length}</div>
+                  </div>
+                  <div className="metric-label">Kayıtlı ve doğrulanmış</div>
+                </div>
               </div>
-              <div className="admin-table-container">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Tarih</th>
-                      <th>Müşteri</th>
-                      <th>Tutar</th>
-                      <th>İşlem / Durum</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {ordersArray.map(order => (
-                      <React.Fragment key={order.id}>
-                        <tr className="order-row" onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)} style={{cursor: 'pointer'}}>
-                          <td className="font-bold">#{order.id?.toString().slice(0,8).toUpperCase()}</td>
-                          <td>{order.created_at ? new Date(order.created_at).toLocaleString('tr-TR') : '-'}</td>
-                          <td>{order.user_email}</td>
-                          <td className="font-bold">${Number(order.total_amount || 0).toFixed(2)}</td>
-                          <td onClick={(e) => e.stopPropagation()}>
-                            <select 
-                              className="status-select"
-                              value={order.status || 'pending'}
-                              onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                            >
-                              <option value="pending">⏳ Beklemede</option>
-                              <option value="preparing">🍳 Hazırlanıyor</option>
-                              <option value="shipped">🚚 Kargoda</option>
-                              <option value="delivered">✅ Teslim Edildi</option>
-                              <option value="completed">🎉 Tamamlandı</option>
-                              <option value="cancelled">❌ İptal Edildi</option>
-                            </select>
+
+              <div className="admin-card">
+                <div className="admin-card-header">
+                  <div>
+                    <h3>Son Sipariş Akışı</h3>
+                    <p className="card-subtitle">En son gelen 5 siparişin detaylı dökümü.</p>
+                  </div>
+                  <button className="btn-text">Tümünü Gör →</button>
+                </div>
+                <div className="admin-table-container">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Sipariş Numarası</th>
+                        <th>Müşteri</th>
+                        <th>Tarih</th>
+                        <th>Tutar</th>
+                        <th>Durum</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recentOrders.map(order => (
+                        <tr key={order.id}>
+                          <td className="font-bold">ORD-{order.id?.toString().slice(0,8).toUpperCase()}</td>
+                          <td>
+                            <div className="table-user">
+                              <span className="user-email">{order.user_email}</span>
+                            </div>
                           </td>
+                          <td>{order.created_at ? new Date(order.created_at).toLocaleDateString('tr-TR') : '-'}</td>
+                          <td className="font-bold">${Number(order.total_amount || 0).toFixed(2)}</td>
+                          <td><span className={`status-badge ${order.status || 'pending'}`}>{order.status}</span></td>
                         </tr>
-                        {expandedOrder === order.id && (
-                          <tr className="expanded-row">
-                            <td colSpan="5">
-                              <div className="expanded-order-details">
-                                <h4>Ürün Detayları</h4>
-                                {order.order_items?.map((item, idx) => (
-                                  <div key={idx} className="expanded-item">
-                                    <span>{item.quantity}x Ürün ID: {item.product_id?.slice(0,8)}</span>
-                                    <span>Birim: ${Number(item.price || 0).toFixed(2)}</span>
-                                    <strong>Toplam: ${(item.quantity * item.price).toFixed(2)}</strong>
-                                  </div>
-                                ))}
-                              </div>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ORDERS TAB */}
+          {activeTab === 'orders' && (
+            <div className="orders-content">
+              <div className="admin-card">
+                <div className="admin-card-header">
+                  <div>
+                    <h3>Tüm Siparişler</h3>
+                    <p className="card-subtitle">Müşteri taleplerini buradan yönetin.</p>
+                  </div>
+                  <div className="filter-actions">
+                    <input type="text" placeholder="Sipariş Ara..." className="search-input" />
+                  </div>
+                </div>
+                <div className="admin-table-container">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Tarih</th>
+                        <th>Müşteri</th>
+                        <th>Tutar</th>
+                        <th>Durum Yönetimi</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ordersArray.map(order => (
+                        <React.Fragment key={order.id}>
+                          <tr className="order-row" onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}>
+                            <td className="font-bold">#{order.id?.toString().slice(0,8).toUpperCase()}</td>
+                            <td>{new Date(order.created_at).toLocaleString('tr-TR')}</td>
+                            <td>{order.user_email}</td>
+                            <td className="font-bold">${Number(order.total_amount || 0).toFixed(2)}</td>
+                            <td onClick={(e) => e.stopPropagation()}>
+                              <select 
+                                className="status-select"
+                                value={order.status || 'pending'}
+                                onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                              >
+                                <option value="pending">⏳ Beklemede</option>
+                                <option value="preparing">🍳 Hazırlanıyor</option>
+                                <option value="shipped">🚚 Kargoda</option>
+                                <option value="delivered">✅ Teslim Edildi</option>
+                                <option value="completed">🎉 Tamamlandı</option>
+                                <option value="cancelled">❌ İptal Edildi</option>
+                              </select>
                             </td>
                           </tr>
-                        )}
-                      </React.Fragment>
-                    ))}
-                  </tbody>
-                </table>
+                          {expandedOrder === order.id && (
+                            <tr className="expanded-row">
+                              <td colSpan="5">
+                                <div className="expanded-outer">
+                                  <div className="expanded-inner">
+                                    <h4>Ürün Listesi</h4>
+                                    {order.order_items?.map((item, idx) => (
+                                      <div key={idx} className="inner-item">
+                                        <span>{item.quantity}x Ürün ID: {item.product_id?.slice(0,8)}</span>
+                                        <strong>${(item.quantity * item.price).toFixed(2)}</strong>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* INVENTORY TAB */}
-        {activeTab === 'inventory' && (
-          <div className="inventory-content">
-            <h1 className="tab-title">Stok ve Envanter</h1>
-            <p className="tab-subtitle">Mağazanızdaki ürünleri yönetin, fiyat ve stok güncellemeleri yapın.</p>
-            
-            <div className="admin-card" style={{padding: '32px', marginBottom: '32px'}}>
-              <div className="admin-card-header" style={{padding: '0 0 24px 0'}}>
-                <h3>Yeni Ürün Ekle</h3>
-              </div>
-              <form onSubmit={handleAddProduct} className="admin-form-row">
-                <div>
-                  <label style={{fontSize: '14px', fontWeight: '500'}}>Ürün Adı</label>
-                  <input type="text" placeholder="Örn: Organik Elma" required value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} />
+          {/* INVENTORY TAB */}
+          {activeTab === 'inventory' && (
+            <div className="inventory-content">
+              <div className="inventory-grid">
+                <div className="admin-card add-card">
+                  <div className="admin-card-header">
+                    <h3>Yeni Ürün Kaydı</h3>
+                  </div>
+                  <div className="card-padding">
+                    <form onSubmit={handleAddProduct} className="premium-form">
+                      <div className="form-group">
+                        <label>Ürün Adı</label>
+                        <input type="text" placeholder="Örn: Portakal" required value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} />
+                      </div>
+                      <div className="form-group-row">
+                        <div className="form-group">
+                          <label>Kategori</label>
+                          <input type="text" placeholder="Meyve" required value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value})} />
+                        </div>
+                        <div className="form-group">
+                          <label>Fiyat ($)</label>
+                          <input type="number" step="0.01" required value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: parseFloat(e.target.value)})} />
+                        </div>
+                      </div>
+                      <div className="form-group">
+                        <label>Başlangıç Stoğu</label>
+                        <input type="number" required value={newProduct.stock_quantity} onChange={e => setNewProduct({...newProduct, stock_quantity: parseInt(e.target.value)})} />
+                      </div>
+                      <button type="submit" className="btn-primary full-width">Ürünü Yayınla</button>
+                    </form>
+                  </div>
                 </div>
-                <div>
-                  <label style={{fontSize: '14px', fontWeight: '500'}}>Kategori</label>
-                  <input type="text" placeholder="Meyve" required value={newProduct.category} onChange={e => setNewProduct({...newProduct, category: e.target.value})} />
-                </div>
-                <div>
-                  <label style={{fontSize: '14px', fontWeight: '500'}}>Fiyat</label>
-                  <input type="number" step="0.01" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: parseFloat(e.target.value)})} />
-                </div>
-                <button type="submit" className="btn-primary">Ürünü Kaydet</button>
-              </form>
-            </div>
 
-            <div className="admin-card">
-              <div className="admin-card-header">
-                <h3>Ürün Listesi</h3>
-              </div>
-              <div className="admin-table-container">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Görsel</th>
-                      <th>Ürün Adı</th>
-                      <th>Kategori</th>
-                      <th>Fiyat</th>
-                      <th>Stok</th>
-                      <th>İşlem</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {productsArray.map(product => {
-                      const isEditing = editingProduct?.id === product.id;
-                      return (
-                        <tr key={product.id}>
-                          <td><img src={product.image_url} alt={product.name} className="table-img" /></td>
-                          <td>{isEditing ? <input className="edit-input" value={editingProduct.name} onChange={e => setEditingProduct({...editingProduct, name: e.target.value})} /> : product.name}</td>
-                          <td>{isEditing ? <input className="edit-input" value={editingProduct.category} onChange={e => setEditingProduct({...editingProduct, category: e.target.value})} /> : product.category}</td>
-                          <td>{isEditing ? <input className="edit-input" type="number" step="0.01" value={editingProduct.price} onChange={e => setEditingProduct({...editingProduct, price: parseFloat(e.target.value)})} /> : `$${Number(product.price || 0).toFixed(2)}`}</td>
-                          <td style={{fontWeight: '700', color: (product.stock_quantity < 15) ? '#b42318' : 'inherit'}}>{isEditing ? <input className="edit-input" type="number" value={editingProduct.stock_quantity} onChange={e => setEditingProduct({...editingProduct, stock_quantity: parseInt(e.target.value)})} /> : product.stock_quantity}</td>
-                          <td>
-                            {isEditing ? (
-                              <div style={{display:'flex', gap: '8px'}}>
-                                <button className="btn-primary" onClick={saveProductEdit} style={{padding: '6px 12px'}}>Kaydet</button>
-                                <button className="btn-secondary" onClick={() => setEditingProduct(null)} style={{padding: '6px 12px'}}>İptal</button>
-                              </div>
-                            ) : (
-                              <div style={{display:'flex', gap: '8px'}}>
-                                <button className="btn-secondary" onClick={() => setEditingProduct(product)}>Düzenle</button>
-                                <button className="btn-danger" onClick={() => handleDeleteProduct(product.id)}>Sil</button>
-                              </div>
-                            )}
-                          </td>
+                <div className="admin-card table-card">
+                  <div className="admin-card-header">
+                    <h3>Ürün Listesi</h3>
+                    <input type="text" placeholder="Ürün Ara..." className="search-input" />
+                  </div>
+                  <div className="admin-table-container">
+                    <table className="admin-table">
+                      <thead>
+                        <tr>
+                          <th>Ürün</th>
+                          <th>Kategori</th>
+                          <th>Fiyat</th>
+                          <th>Stok Belgesi</th>
+                          <th>İşlem</th>
                         </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
+                      </thead>
+                      <tbody>
+                        {productsArray.map(product => {
+                          const isEditing = editingProduct?.id === product.id;
+                          return (
+                            <tr key={product.id}>
+                              <td>
+                                <div className="product-table-cell">
+                                  <img src={product.image_url} alt="" className="mini-img" />
+                                  <span>{isEditing ? <input value={editingProduct.name} onChange={e => setEditingProduct({...editingProduct, name: e.target.value})} className="edit-input" /> : product.name}</span>
+                                </div>
+                              </td>
+                              <td>{isEditing ? <input value={editingProduct.category} onChange={e => setEditingProduct({...editingProduct, category: e.target.value})} className="edit-input" /> : product.category}</td>
+                              <td className="font-bold">${isEditing ? <input type="number" step="0.01" value={editingProduct.price} onChange={e => setEditingProduct({...editingProduct, price: parseFloat(e.target.value)})} className="edit-input" /> : Number(product.price).toFixed(2)}</td>
+                              <td>
+                                <span className={`stock-indicator ${(product.stock_quantity < 15) ? 'low' : 'good'}`}>
+                                  {isEditing ? <input type="number" value={editingProduct.stock_quantity} onChange={e => setEditingProduct({...editingProduct, stock_quantity: parseInt(e.target.value)})} className="edit-input" /> : product.stock_quantity + ' adet'}
+                                </span>
+                              </td>
+                              <td>
+                                {isEditing ? (
+                                  <div className="edit-actions">
+                                    <button className="btn-save" onClick={saveProductEdit}>✅</button>
+                                    <button className="btn-cancel" onClick={() => setEditingProduct(null)}>❌</button>
+                                  </div>
+                                ) : (
+                                  <div className="table-actions">
+                                    <button className="btn-icon" onClick={() => setEditingProduct(product)}>✏️</button>
+                                    <button className="btn-icon delete" onClick={() => handleDeleteProduct(product.id)}>🗑️</button>
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* CUSTOMERS TAB */}
-        {activeTab === 'customers' && (
-          <div className="customers-content">
-            <h1 className="tab-title">Müşteriler</h1>
-            <p className="tab-subtitle">Mağazanıza kayıt olan kullanıcıların profil ve adres bilgilerine ulaşın.</p>
-            
-            <div className="admin-card">
-              <div className="admin-card-header">
-                <h3>Kayıtlı Kullanıcı Rehberi</h3>
-              </div>
-              <div className="admin-table-container">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Müşteri</th>
-                      <th>Telefon</th>
-                      <th>Teslimat Adresi</th>
-                      <th>Kayıt Tarihi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {customersArray.map(c => (
-                      <tr key={c.id}>
-                        <td>
-                          <div style={{fontWeight: '600', color: '#101828'}}>{c.full_name || 'İsimsiz Müşteri'}</div>
-                          <div style={{fontSize: '12px', color: '#667085'}}>{c.id?.slice(0,8)}</div>
-                        </td>
-                        <td>{c.phone || '-'}</td>
-                        <td title={c.delivery_address}>{c.delivery_address ? (c.delivery_address.slice(0,40) + '...') : '-'}</td>
-                        <td>{c.created_at ? new Date(c.created_at).toLocaleDateString() : '-'}</td>
+          {/* CUSTOMERS TAB */}
+          {activeTab === 'customers' && (
+            <div className="customers-content">
+              <div className="admin-card">
+                <div className="admin-card-header">
+                  <div>
+                    <h3>Kullanıcı Veritabanı</h3>
+                    <p className="card-subtitle">Kayıtlı tüm kullanıcılar ve profilleri.</p>
+                  </div>
+                </div>
+                <div className="admin-table-container">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Müşteri</th>
+                        <th>İletişim</th>
+                        <th>Teslimat Adresi</th>
+                        <th>Hesap Yaşı</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {customersArray.map(c => (
+                        <tr key={c.id}>
+                          <td>
+                            <div className="customer-cell">
+                              <div className="cust-avatar">{c.full_name?.charAt(0)}</div>
+                              <div className="cust-details">
+                                <span className="cust-name">{c.full_name || 'İsimsiz Müşteri'}</span>
+                                <span className="cust-id">ID: {c.id?.slice(0,8)}</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td>{c.phone || '-'}</td>
+                          <td className="address-cell-v2" title={c.delivery_address}>{c.delivery_address || '-'}</td>
+                          <td>{c.created_at ? new Date(c.created_at).toLocaleDateString() : '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
