@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { useCart } from '../context/CartContext';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { createOrder } from '../api/services';
+import { useCart } from '../context/CartContext';
+import { createOrder, fetchProfile } from '../api/services';
 import './CheckoutFlow.css';
 
 export default function CheckoutFlow() {
@@ -23,6 +23,21 @@ export default function CheckoutFlow() {
     expiry: '12/26',
     cvv: '***'
   });
+
+  useEffect(() => {
+    if (isCheckoutOpen && user) {
+      fetchProfile(user.id).then(profile => {
+        if (profile) {
+          setAddress(prev => ({
+            ...prev,
+            fullName: profile.full_name || prev.fullName,
+            phone: profile.phone || prev.phone,
+            street: prev.street || profile.delivery_address || '',
+          }));
+        }
+      });
+    }
+  }, [isCheckoutOpen, user]);
 
   if (!isCheckoutOpen) return null;
 
@@ -61,7 +76,7 @@ export default function CheckoutFlow() {
       // Simulate payment processing delay
       await new Promise(r => setTimeout(r, 1500));
       
-      const success = await createOrder(cartItems, total, showToast, emptyCart, user.id);
+      const success = await createOrder(cartItems, total, showToast, emptyCart, user.id, user.email);
       
       if (success) {
         setCheckoutOpen(false);

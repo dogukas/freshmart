@@ -9,6 +9,8 @@ import ProfilePage from './pages/ProfilePage';
 import SearchPage from './pages/SearchPage';
 import ProductPage from './pages/ProductPage';
 import WishlistPage from './pages/WishlistPage';
+import AdminPage from './pages/AdminPage';
+import UpdatePasswordPage from './pages/UpdatePasswordPage';
 import Footer from './components/Footer';
 import CartDrawer from './components/CartDrawer';
 import AuthModal from './components/AuthModal';
@@ -30,6 +32,8 @@ export default function App() {
               <Route path="/search" element={<SearchPage />} />
               <Route path="/product/:id" element={<ProductPage />} />
               <Route path="/wishlist" element={<WishlistPage />} />
+              <Route path="/admin" element={<AdminPage />} />
+              <Route path="/update-password" element={<UpdatePasswordPage />} />
             </Routes>
             <Footer />
             <CartDrawer />

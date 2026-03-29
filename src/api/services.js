@@ -17,7 +17,7 @@ export async function fetchProducts() {
   return data;
 }
 
-export async function createOrder(cartItems, total, showToast, clearCart, userId) {
+export async function createOrder(cartItems, total, showToast, clearCart, userId, userEmail) {
   if (!userId) {
     showToast('Sipariş vermek için giriş yapmalısınız.', 'error');
     return false;
@@ -30,7 +30,7 @@ export async function createOrder(cartItems, total, showToast, clearCart, userId
   // 1. Create Order
   const { data: orderData, error: orderError } = await supabase
     .from('orders')
-    .insert([{ total_amount: total, status: 'completed', user_id: userId }])
+    .insert([{ total_amount: total, status: 'completed', user_id: userId, user_email: userEmail }])
     .select()
     .single();
 
@@ -78,6 +78,38 @@ export async function fetchUserOrders(userId) {
   }
   
   return data;
+}
+
+// =============================================
+// USER PROFILE FUNCTIONS
+// =============================================
+
+export async function fetchProfile(userId) {
+  if (!userId) return null;
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
+    
+  if (error && error.code !== 'PGRST116') { // PGRST116 is code for "No rows found"
+    console.error('Error fetching profile:', error);
+  }
+  return data;
+}
+
+export async function saveProfile(userId, profileData) {
+  if (!userId) return false;
+  // Use upsert to insert if no record exists, otherwise update
+  const { error } = await supabase
+    .from('profiles')
+    .upsert({ id: userId, ...profileData, updated_at: new Date() });
+
+  if (error) {
+    console.error('Error saving profile:', error);
+    return false;
+  }
+  return true;
 }
 
 // =============================================
