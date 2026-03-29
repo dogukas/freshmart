@@ -146,7 +146,9 @@ export default function AdminPage() {
 
   // Chart Data Calculations
   const statusChartData = useMemo(() => {
+    if (!ordersArray || ordersArray.length === 0) return [];
     const counts = ordersArray.reduce((acc, order) => {
+      if (!order) return acc;
       const status = order.status || 'pending';
       acc[status] = (acc[status] || 0) + 1;
       return acc;
@@ -159,7 +161,9 @@ export default function AdminPage() {
   }, [ordersArray]);
 
   const categoryChartData = useMemo(() => {
+    if (!productsArray || productsArray.length === 0) return [];
     const counts = productsArray.reduce((acc, prod) => {
+      if (!prod) return acc;
       const cat = prod.category || 'Diğer';
       acc[cat] = (acc[cat] || 0) + 1;
       return acc;
@@ -293,25 +297,29 @@ export default function AdminPage() {
                     <h3>Sipariş Durum Dağılımı</h3>
                   </div>
                   <div className="chart-container">
-                    <ResponsiveContainer width="100%" height={260}>
-                      <PieChart>
-                        <Pie
-                          data={statusChartData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={60}
-                          outerRadius={80}
-                          paddingAngle={5}
-                          dataKey="value"
-                        >
-                          {statusChartData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                        <Legend verticalAlign="bottom" height={36}/>
-                      </PieChart>
-                    </ResponsiveContainer>
+                    {statusChartData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={260}>
+                        <PieChart>
+                          <Pie
+                            data={statusChartData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={80}
+                            paddingAngle={5}
+                            dataKey="value"
+                          >
+                            {statusChartData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                          <Legend verticalAlign="bottom" height={36}/>
+                        </PieChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="no-data">Veri bulunamadı</div>
+                    )}
                   </div>
                 </div>
 
@@ -320,25 +328,29 @@ export default function AdminPage() {
                     <h3>Kategori Bazlı Ürün Analizi</h3>
                   </div>
                   <div className="chart-container">
-                    <ResponsiveContainer width="100%" height={260}>
-                      <PieChart>
-                        <Pie
-                          data={categoryChartData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          outerRadius={80}
-                          fill="#8884d8"
-                          dataKey="value"
-                        >
-                          {categoryChartData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[(index + 2) % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                        <Legend verticalAlign="bottom" height={36}/>
-                      </PieChart>
-                    </ResponsiveContainer>
+                    {categoryChartData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={260}>
+                        <PieChart>
+                          <Pie
+                            data={categoryChartData}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            outerRadius={80}
+                            fill="#8884d8"
+                            dataKey="value"
+                          >
+                            {categoryChartData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[(index + 2) % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                          <Legend verticalAlign="bottom" height={36}/>
+                        </PieChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="no-data">Veri bulunamadı</div>
+                    )}
                   </div>
                 </div>
               </div>
