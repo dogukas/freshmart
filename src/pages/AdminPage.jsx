@@ -32,20 +32,24 @@ export default function AdminPage() {
   useEffect(() => {
     async function loadAdminData() {
       if (user?.email === 'teyo758@gmail.com') {
-        const [ordersRes, productsRes, customersRes] = await Promise.all([
-          supabase.from('orders').select('*, order_items(*)').order('created_at', { ascending: false }),
-          fetchProducts(),
-          fetchAllProfiles()
-        ]);
-        
-        if (ordersRes.error) {
-          console.error('Error fetching admin orders:', ordersRes.error);
-        } else {
-          setOrders(ordersRes.data || []);
-        }
+        try {
+          const [ordersRes, productsRes, customersRes] = await Promise.all([
+            supabase.from('orders').select('*, order_items(*)').order('created_at', { ascending: false }),
+            fetchProducts(),
+            fetchAllProfiles()
+          ]);
+          
+          if (ordersRes.error) {
+            console.error('Error fetching admin orders:', ordersRes.error);
+          } else {
+            setOrders(ordersRes.data || []);
+          }
 
-        if (productsRes) setProducts(productsRes);
-        if (customersRes) setCustomers(customersRes);
+          if (productsRes) setProducts(productsRes);
+          if (customersRes) setCustomers(customersRes);
+        } catch (err) {
+          console.error('Admin data loading failed:', err);
+        }
       }
       setLoading(false);
     }
@@ -119,12 +123,18 @@ export default function AdminPage() {
     );
   }
 
-  // Dashboard Calculations
-  const totalRevenue = orders.filter(o => o.status === 'completed' || o.status === 'delivered')
-                             .reduce((sum, o) => sum + Number(o.total_amount), 0);
-  const totalOrdersCount = orders.length;
-  const lowStockProducts = products.filter(p => p.stock_quantity < 15);
-  const recentOrders = orders.slice(0, 5);
+  // Defensive Dashboard Calculations
+  const ordersArray = orders || [];
+  const productsArray = products || [];
+  const customersArray = customers || [];
+
+  const totalRevenue = ordersArray
+    .filter(o => o && (o.status === 'completed' || o.status === 'delivered'))
+    .reduce((sum, o) => sum + Number(o.total_amount || 0), 0);
+  
+  const totalOrdersCount = ordersArray.length;
+  const lowStockProducts = productsArray.filter(p => p && (p.stock_quantity ?? 100) < 15);
+  const recentOrders = ordersArray.slice(0, 5);
 
   return (
     <div className="admin-dashboard">
@@ -156,7 +166,7 @@ export default function AdminPage() {
             <div className="metrics-grid">
               <div className="metric-card">
                 <h3>Kazanılan Ciro</h3>
-                <div className="metric-value">${totalRevenue.toFixed(2)}</div>
+                <div className="metric-value">${(totalRevenue || 0).toFixed(2)}</div>
                 <div className="metric-label">Teslim Edilen Siparişlerden</div>
               </div>
               <div className="metric-card">
@@ -171,7 +181,7 @@ export default function AdminPage() {
               </div>
               <div className="metric-card">
                 <h3>Kayıtlı Müşteri</h3>
-                <div className="metric-value">{customers.length}</div>
+                <div className="metric-value">{customersArray.length}</div>
                 <div className="metric-label">Sistemde Açılmış Hesap</div>
               </div>
             </div>
@@ -192,11 +202,11 @@ export default function AdminPage() {
                   <tbody>
                     {recentOrders.map(order => (
                       <tr key={order.id}>
-                        <td>#{order.id.slice(0,8)}</td>
-                        <td>{order.user_email}</td>
-                        <td>{new Date(order.created_at).toLocaleDateString()}</td>
-                        <td>${Number(order.total_amount).toFixed(2)}</td>
-                        <td><span className={`status-badge ${order.status}`}>{order.status}</span></td>
+                        <td>#{order.id?.toString().slice(0,8) || 'N/A'}</td>
+                        <td>{order.user_email || 'Bilinmeyen'}</td>
+                        <td>{order.created_at ? new Date(order.created_at).toLocaleDateString() : '-'}</td>
+                        <td>${Number(order.total_amount || 0).toFixed(2)}</td>
+                        <td><span className={`status-badge ${order.status || 'pending'}`}>{order.status || 'pending'}</span></td>
                       </tr>
                     ))}
                     {recentOrders.length === 0 && (
@@ -225,25 +235,25 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.map(order => (
+                  {ordersArray.map(order => (
                     <React.Fragment key={order.id}>
                       <tr className="order-row" onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}>
-                        <td>#{order.id.slice(0,8)}</td>
-                        <td>{new Date(order.created_at).toLocaleString('tr-TR')}</td>
-                        <td>{order.user_email}</td>
-                        <td className="font-bold">${Number(order.total_amount).toFixed(2)}</td>
+                        <td>#{order.id?.toString().slice(0,8) || 'N/A'}</td>
+                        <td>{order.created_at ? new Date(order.created_at).toLocaleString('tr-TR') : '-'}</td>
+                        <td>{order.user_email || 'Bilinmeyen'}</td>
+                        <td className="font-bold">${Number(order.total_amount || 0).toFixed(2)}</td>
                         <td onClick={(e) => e.stopPropagation()}>
                           <select 
-                            className={`status-select ${order.status}`}
-                            value={order.status}
+                            className={`status-select ${order.status || 'pending'}`}
+                            value={order.status || 'pending'}
                             onChange={(e) => handleStatusChange(order.id, e.target.value)}
                           >
                             <option value="pending">⏳ Bekliyor</option>
                             <option value="preparing">🍳 Hazırlanıyor</option>
-                            <option value="shipped">🚚 Kargoda</option>
+                            <option value="shipped">🚚 Kargoya Verildi</option>
                             <option value="delivered">✅ Teslim Edildi</option>
                             <option value="completed">🎉 Tamamlandı</option>
-                            <option value="cancelled">❌ İptal</option>
+                            <option value="cancelled">❌ İptal Edildi</option>
                           </select>
                         </td>
                       </tr>
@@ -255,10 +265,10 @@ export default function AdminPage() {
                               {order.order_items && order.order_items.length > 0 ? (
                                 order.order_items.map((item, idx) => (
                                   <div key={idx} className="expanded-item">
-                                    <span>ID: {item.product_id?.slice(0,6)}</span>
+                                    <span>ID: {item.product_id?.toString().slice(0,6) || 'N/A'}</span>
                                     <span>{item.quantity} Adet</span>
-                                    <span>Birim Fiyat: ${Number(item.price).toFixed(2)}</span>
-                                    <strong>Ara Toplam: ${(item.quantity * item.price).toFixed(2)}</strong>
+                                    <span>Birim Fiyat: ${Number(item.price || 0).toFixed(2)}</span>
+                                    <strong>Ara Toplam: ${(Number(item.quantity || 0) * Number(item.price || 0)).toFixed(2)}</strong>
                                   </div>
                                 ))
                               ) : (
@@ -270,7 +280,7 @@ export default function AdminPage() {
                       )}
                     </React.Fragment>
                   ))}
-                  {orders.length === 0 && (
+                  {ordersArray.length === 0 && (
                     <tr><td colSpan="5" className="text-center">Hiç sipariş bulunamadı.</td></tr>
                   )}
                 </tbody>
@@ -311,11 +321,11 @@ export default function AdminPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {products.map(product => {
+                    {productsArray.map(product => {
                       const isEditing = editingProduct?.id === product.id;
                       return (
                         <tr key={product.id}>
-                          <td><img src={product.image_url} alt={product.name} className="table-img" /></td>
+                          <td><img src={product.image_url || 'https://via.placeholder.com/50'} alt={product.name} className="table-img" /></td>
                           <td>
                             {isEditing ? (
                               <input type="text" value={editingProduct.name} onChange={e => setEditingProduct({...editingProduct, name: e.target.value})} className="edit-input" />
@@ -329,13 +339,13 @@ export default function AdminPage() {
                           <td>
                             {isEditing ? (
                               <input type="number" step="0.01" value={editingProduct.price} onChange={e => setEditingProduct({...editingProduct, price: parseFloat(e.target.value)})} className="edit-input small" />
-                            ) : `$${product.price}`}
+                            ) : `$${Number(product.price || 0).toFixed(2)}`}
                           </td>
                           <td>
                             {isEditing ? (
                               <input type="number" value={editingProduct.stock_quantity} onChange={e => setEditingProduct({...editingProduct, stock_quantity: parseInt(e.target.value)})} className="edit-input small" />
                             ) : (
-                              <span className={product.stock_quantity < 15 ? 'text-danger font-bold' : ''}>{product.stock_quantity}</span>
+                              <span className={(product.stock_quantity || 0) < 15 ? 'text-danger font-bold' : ''}>{product.stock_quantity || 0}</span>
                             )}
                           </td>
                           <td className="actions-cell">
@@ -378,17 +388,17 @@ export default function AdminPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {customers.map(c => (
+                    {customersArray.map(c => (
                       <tr key={c.id}>
-                        <td className="text-muted" title={c.id}>{c.id.slice(0,8)}...</td>
+                        <td className="text-muted" title={c.id}>{c.id?.toString().slice(0,8) || 'N/A'}...</td>
                         <td>{c.full_name || '-'}</td>
                         <td>{c.phone || '-'}</td>
                         <td className="address-col">{c.delivery_address || '-'}</td>
-                        <td>{new Date(c.created_at).toLocaleDateString()}</td>
+                        <td>{c.created_at ? new Date(c.created_at).toLocaleDateString() : '-'}</td>
                       </tr>
                     ))}
-                    {customers.length === 0 && (
-                      <tr><td colSpan="5" className="text-center">Kayıtlı tam profil bulunamadı. (Sistemdeki auth accountları hariç)</td></tr>
+                    {customersArray.length === 0 && (
+                      <tr><td colSpan="5" className="text-center">Kayıtlı tam profil bulunamadı.</td></tr>
                     )}
                   </tbody>
                 </table>
