@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import Navbar from './components/Navbar';
@@ -18,29 +18,38 @@ import CheckoutFlow from './components/CheckoutFlow';
 import Toast from './components/Toast';
 import './App.css';
 
+function AppContent() {
+  const location = useLocation();
+  const isAdminPath = location.pathname.startsWith('/admin');
+
+  return (
+    <div className={`app ${isAdminPath ? 'app--admin' : ''}`}>
+      {!isAdminPath && <Navbar />}
+      {!isAdminPath && <SubNav />}
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/search" element={<SearchPage />} />
+        <Route path="/product/:id" element={<ProductPage />} />
+        <Route path="/wishlist" element={<WishlistPage />} />
+        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/update-password" element={<UpdatePasswordPage />} />
+      </Routes>
+      {!isAdminPath && <Footer />}
+      <CartDrawer />
+      <AuthModal />
+      <CheckoutFlow />
+      <Toast />
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <CartProvider>
-          <div className="app">
-            <Navbar />
-            <SubNav />
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/search" element={<SearchPage />} />
-              <Route path="/product/:id" element={<ProductPage />} />
-              <Route path="/wishlist" element={<WishlistPage />} />
-              <Route path="/admin" element={<AdminPage />} />
-              <Route path="/update-password" element={<UpdatePasswordPage />} />
-            </Routes>
-            <Footer />
-            <CartDrawer />
-            <AuthModal />
-            <CheckoutFlow />
-            <Toast />
-          </div>
+          <AppContent />
         </CartProvider>
       </AuthProvider>
     </BrowserRouter>

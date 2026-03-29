@@ -3,6 +3,10 @@
   background: #f2f4f0;
 }
 
+.app--admin {
+  background: #f8fafc;
+}
+
 .app__main {
   margin-top: 116px; /* navbar 64px + subnav 52px */
   display: flex;
