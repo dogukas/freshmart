@@ -274,6 +274,33 @@
   border-left: 4px solid var(--error-600);
 }
 
+/* INSIGHTS GRID V2 */
+.insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.chart-card {
+  padding: 0;
+}
+
+.chart-container {
+  padding: 24px;
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.recharts-default-legend {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: var(--gray-600) !important;
+  margin-top: 16px !important;
+}
+
 /* TABLES V2 */
 .admin-card {
   background: #ffffff;

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../api/supabaseClient';
 import { 
@@ -10,6 +10,14 @@ import {
   deleteProduct,
   updateProductFields
 } from '../api/services';
+import { 
+  PieChart, 
+  Pie, 
+  Cell, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer 
+} from 'recharts';
 import './AdminPage.css';
 
 export default function AdminPage() {
@@ -136,6 +144,35 @@ export default function AdminPage() {
   const lowStockProducts = productsArray.filter(p => p && (p.stock_quantity ?? 100) < 15);
   const recentOrders = ordersArray.slice(0, 5);
 
+  // Chart Data Calculations
+  const statusChartData = useMemo(() => {
+    const counts = ordersArray.reduce((acc, order) => {
+      const status = order.status || 'pending';
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {});
+    
+    return Object.keys(counts).map(key => ({
+      name: key.charAt(0).toUpperCase() + key.slice(1),
+      value: counts[key]
+    }));
+  }, [ordersArray]);
+
+  const categoryChartData = useMemo(() => {
+    const counts = productsArray.reduce((acc, prod) => {
+      const cat = prod.category || 'Diğer';
+      acc[cat] = (acc[cat] || 0) + 1;
+      return acc;
+    }, {});
+    
+    return Object.keys(counts).map(key => ({
+      name: key,
+      value: counts[key]
+    }));
+  }, [productsArray]);
+
+  const COLORS = ['#079455', '#17B26A', '#32D583', '#73E2A3', '#A6EFD2', '#D1FADF'];
+
   return (
     <div className="admin-dashboard">
       {/* SIDEBAR V2 */}
@@ -246,6 +283,63 @@ export default function AdminPage() {
                     <div className="metric-value">{(customersArray || []).length}</div>
                   </div>
                   <div className="metric-label">Kayıtlı ve doğrulanmış</div>
+                </div>
+              </div>
+
+              {/* GRAPHİKLER BÖLÜMÜ (PIE UI) */}
+              <div className="insights-grid">
+                <div className="admin-card chart-card">
+                  <div className="admin-card-header">
+                    <h3>Sipariş Durum Dağılımı</h3>
+                  </div>
+                  <div className="chart-container">
+                    <ResponsiveContainer width="100%" height={260}>
+                      <PieChart>
+                        <Pie
+                          data={statusChartData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={80}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          {statusChartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend verticalAlign="bottom" height={36}/>
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div className="admin-card chart-card">
+                  <div className="admin-card-header">
+                    <h3>Kategori Bazlı Ürün Analizi</h3>
+                  </div>
+                  <div className="chart-container">
+                    <ResponsiveContainer width="100%" height={260}>
+                      <PieChart>
+                        <Pie
+                          data={categoryChartData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {categoryChartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[(index + 2) % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend verticalAlign="bottom" height={36}/>
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               </div>
 
