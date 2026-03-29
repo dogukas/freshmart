@@ -85,12 +85,22 @@ USING (TRUE);
 -- (service_role key RLS'i otomatik bypass eder — mobil uygulama için ideal)
 
 -- =============================================
--- ADIM 3: Sipariş Bildirimi için Webhook Fonksiyonu
+-- ADIM 3: Sipariş Bildirimi için Webhook
 -- =============================================
--- NOT: Bu fonksiyon siparişler geldiğinde çalışır.
--- Mobil uygulamanızın bildirim URL'ini WEBHOOK_URL kısmına yazın.
--- Supabase Dashboard → Database → Webhooks üzerinden de ayarlanabilir.
+-- YÖNTEMl 1 (ÖNERİLEN): Supabase Dashboard Üzerinden
+-- Dashboard → Database → Webhooks → "Create a new webhook"
+--   Name: new_order_notification
+--   Table: orders
+--   Events: INSERT
+--   URL: https://MOBİL-SUNUCUNUZ.com/api/webhooks/new-order
+-- Bu yöntem hiç kod gerektirmez!
 
+-- YÖNTEMl 2: SQL Trigger (pg_net v0.10+ gerektirir)
+-- Önce eski kırık trigger'ı temizle:
+DROP TRIGGER IF EXISTS on_new_order ON public.orders;
+DROP FUNCTION IF EXISTS public.notify_new_order();
+
+-- Yeni, doğru pg_net API ile trigger:
 CREATE OR REPLACE FUNCTION public.notify_new_order()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -98,32 +108,24 @@ SECURITY DEFINER
 AS $$
 DECLARE
   webhook_url TEXT := 'https://MOBIL-UYGULAMANIZIN-SUNUCUSU.com/api/webhooks/new-order';
-  payload JSON;
 BEGIN
-  -- Bildirim yükü hazırla
-  payload := json_build_object(
-    'type', 'NEW_ORDER',
-    'order_id', NEW.id,
-    'total_amount', NEW.total_amount,
-    'status', NEW.status,
-    'created_at', NEW.created_at,
-    'user_id', NEW.user_id
-  );
-
-  -- HTTP POST gönder (pg_net uzantısı gereklidir)
-  -- Supabase'de pg_net default olarak aktif
+  -- pg_net v0.10+ doğru API (request_id döndürür)
   PERFORM net.http_post(
-    url := webhook_url,
-    headers := '{"Content-Type": "application/json"}'::jsonb,
-    body := payload::text
+    url      := webhook_url,
+    headers  := jsonb_build_object('Content-Type', 'application/json'),
+    body     := jsonb_build_object(
+      'type',         'NEW_ORDER',
+      'order_id',     NEW.id,
+      'total_amount', NEW.total_amount,
+      'status',       NEW.status,
+      'created_at',   NEW.created_at,
+      'user_id',      NEW.user_id
+    )::text
   );
-
   RETURN NEW;
 END;
 $$;
 
--- Trigger: Her yeni sipariş kaydında çalışır
-DROP TRIGGER IF EXISTS on_new_order ON public.orders;
 CREATE TRIGGER on_new_order
   AFTER INSERT ON public.orders
   FOR EACH ROW
