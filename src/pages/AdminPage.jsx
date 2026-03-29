@@ -131,17 +131,17 @@ export default function AdminPage() {
     );
   }
 
-  // Defensive Dashboard Calculations
-  const ordersArray = orders || [];
-  const productsArray = products || [];
-  const customersArray = customers || [];
+  // Defensive Array Filtering
+  const ordersArray = (orders || []).filter(o => o && o.id);
+  const productsArray = (products || []).filter(p => p && p.id);
+  const customersArray = (customers || []).filter(c => c && c.id);
 
   const totalRevenue = ordersArray
-    .filter(o => o && (o.status === 'completed' || o.status === 'delivered'))
+    .filter(o => o.status === 'completed' || o.status === 'delivered')
     .reduce((sum, o) => sum + Number(o.total_amount || 0), 0);
   
   const totalOrdersCount = ordersArray.length;
-  const lowStockProducts = productsArray.filter(p => p && (p.stock_quantity ?? 100) < 15);
+  const lowStockProducts = productsArray.filter(p => (p.stock_quantity ?? 100) < 15);
   const recentOrders = ordersArray.slice(0, 5);
 
   // Chart Data Calculations
@@ -375,19 +375,22 @@ export default function AdminPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {recentOrders.map(order => (
-                        <tr key={order.id}>
-                          <td className="font-bold">ORD-{order.id?.toString().slice(0,8).toUpperCase()}</td>
-                          <td>
-                            <div className="table-user">
-                              <span className="user-email">{order.user_email}</span>
-                            </div>
-                          </td>
-                          <td>{order.created_at ? new Date(order.created_at).toLocaleDateString('tr-TR') : '-'}</td>
-                          <td className="font-bold">${Number(order.total_amount || 0).toFixed(2)}</td>
-                          <td><span className={`status-badge ${order.status || 'pending'}`}>{order.status}</span></td>
-                        </tr>
-                      ))}
+                      {recentOrders.map(order => {
+                        if (!order || !order.id) return null;
+                        return (
+                          <tr key={order.id}>
+                            <td className="font-bold">ORD-{String(order.id).slice(0, 8).toUpperCase()}</td>
+                            <td>
+                              <div className="table-user">
+                                <span className="user-email">{order.user_email || 'Bilinmeyen'}</span>
+                              </div>
+                            </td>
+                            <td>{order.created_at ? new Date(order.created_at).toLocaleDateString('tr-TR') : '-'}</td>
+                            <td className="font-bold">${Number(order.total_amount || 0).toFixed(2)}</td>
+                            <td><span className={`status-badge ${order.status || 'pending'}`}>{order.status || 'Beklemede'}</span></td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -420,47 +423,50 @@ export default function AdminPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {ordersArray.map(order => (
-                        <React.Fragment key={order.id}>
-                          <tr className="order-row" onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}>
-                            <td className="font-bold">#{order.id?.toString().slice(0,8).toUpperCase()}</td>
-                            <td>{new Date(order.created_at).toLocaleString('tr-TR')}</td>
-                            <td>{order.user_email}</td>
-                            <td className="font-bold">${Number(order.total_amount || 0).toFixed(2)}</td>
-                            <td onClick={(e) => e.stopPropagation()}>
-                              <select 
-                                className="status-select"
-                                value={order.status || 'pending'}
-                                onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                              >
-                                <option value="pending">⏳ Beklemede</option>
-                                <option value="preparing">🍳 Hazırlanıyor</option>
-                                <option value="shipped">🚚 Kargoda</option>
-                                <option value="delivered">✅ Teslim Edildi</option>
-                                <option value="completed">🎉 Tamamlandı</option>
-                                <option value="cancelled">❌ İptal Edildi</option>
-                              </select>
-                            </td>
-                          </tr>
-                          {expandedOrder === order.id && (
-                            <tr className="expanded-row">
-                              <td colSpan="5">
-                                <div className="expanded-outer">
-                                  <div className="expanded-inner">
-                                    <h4>Ürün Listesi</h4>
-                                    {order.order_items?.map((item, idx) => (
-                                      <div key={idx} className="inner-item">
-                                        <span>{item.quantity}x Ürün ID: {item.product_id?.slice(0,8)}</span>
-                                        <strong>${(item.quantity * item.price).toFixed(2)}</strong>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
+                      {ordersArray.map(order => {
+                        if (!order || !order.id) return null;
+                        return (
+                          <React.Fragment key={order.id}>
+                            <tr className="order-row" onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}>
+                              <td className="font-bold">#{String(order.id).slice(0, 8).toUpperCase()}</td>
+                              <td>{order.created_at ? new Date(order.created_at).toLocaleString('tr-TR') : '-'}</td>
+                              <td>{order.user_email || 'Misafir'}</td>
+                              <td className="font-bold">${Number(order.total_amount || 0).toFixed(2)}</td>
+                              <td onClick={(e) => e.stopPropagation()}>
+                                <select 
+                                  className="status-select"
+                                  value={order.status || 'pending'}
+                                  onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                                >
+                                  <option value="pending">⏳ Beklemede</option>
+                                  <option value="preparing">🍳 Hazırlanıyor</option>
+                                  <option value="shipped">🚚 Kargoda</option>
+                                  <option value="delivered">✅ Teslim Edildi</option>
+                                  <option value="completed">🎉 Tamamlandı</option>
+                                  <option value="cancelled">❌ İptal Edildi</option>
+                                </select>
                               </td>
                             </tr>
-                          )}
-                        </React.Fragment>
-                      ))}
+                            {expandedOrder === order.id && (
+                              <tr className="expanded-row">
+                                <td colSpan="5">
+                                  <div className="expanded-outer">
+                                    <div className="expanded-inner">
+                                      <h4>Ürün Listesi</h4>
+                                      {order.order_items?.map((item, idx) => (
+                                        <div key={idx} className="inner-item">
+                                          <span>{item.quantity}x Ürün ID: {String(item.product_id).slice(0, 8)}</span>
+                                          <strong>${(Number(item.quantity) * Number(item.price)).toFixed(2)}</strong>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
