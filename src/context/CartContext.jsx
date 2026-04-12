@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { fetchProducts } from '../api/services';
+import { supabase } from '../api/supabaseClient';
 
 const CartContext = createContext();
 
@@ -26,7 +27,7 @@ export function CartProvider({ children }) {
   const [products, setProducts] = useState([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
 
-  // Persistence to LocalStorage
+  // Sync to local storage
   useEffect(() => {
     localStorage.setItem('freshmart_cart', JSON.stringify(cart));
   }, [cart]);
@@ -34,6 +35,45 @@ export function CartProvider({ children }) {
   useEffect(() => {
     localStorage.setItem('freshmart_wishlist', JSON.stringify(wishlist));
   }, [wishlist]);
+
+  // Sync to Cloud (Supabase user_metadata) with debounce
+  const syncTimeoutRef = useRef(null);
+  
+  const syncToCloud = useCallback((newCart, newWishlist) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+        syncTimeoutRef.current = setTimeout(async () => {
+          await supabase.auth.updateUser({
+            data: { cart: newCart, wishlist: newWishlist }
+          });
+        }, 1200);
+      }
+    });
+  }, []);
+
+  // Sync state whenever cart or wishlist changes
+  useEffect(() => {
+    syncToCloud(cart, wishlist);
+  }, [cart, wishlist, syncToCloud]);
+
+  // Auth Listener to Pull Cloud Data on Login
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        // Delay slighty to ensure fresh fetch
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (!error && user?.user_metadata) {
+          if (user.user_metadata.cart) setCart(user.user_metadata.cart);
+          if (user.user_metadata.wishlist) setWishlist(user.user_metadata.wishlist);
+        }
+      } else if (event === 'SIGNED_OUT') {
+        setCart({});
+        setWishlist({});
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Load products from Supabase
   useEffect(() => {

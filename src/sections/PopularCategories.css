@@ -90,3 +90,33 @@
   font-size: 11px;
   color: var(--gray-600);
 }
+
+/* Responsive Categories */
+@media (max-width: 1024px) {
+  .popular-categories__grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 800px) {
+  .popular-categories {
+    padding: 24px 16px;
+  }
+  .popular-categories__grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .section-title {
+    font-size: 22px;
+  }
+  .category-card__image-wrap {
+    width: 60px;
+    height: 60px;
+  }
+}
+
+@media (max-width: 500px) {
+  .popular-categories__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

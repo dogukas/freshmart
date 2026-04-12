@@ -81,3 +81,12 @@
   transition: background 0.2s;
 }
 .fresh-hero-card__btn:hover { background: var(--green-primary); }
+
+/* Responsive Fresh Picks */
+@media (max-width: 800px) {
+  .fresh-picks-section { padding: 24px 16px; }
+  .fresh-picks__layout { flex-direction: column; }
+  .fresh-picks__side-hero { width: 100%; flex: auto; }
+  .fresh-hero-card { min-height: 340px; }
+  .fresh-picks__grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+}

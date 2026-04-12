@@ -164,3 +164,42 @@
 .float-card-prices { display: flex; align-items: baseline; gap: 10px; }
 .float-card-price { font-size: 22px; font-weight: 900; color: var(--gray-800); }
 .float-card-old { font-size: 13px; color: var(--gray-300); text-decoration: line-through; }
+
+/* Responsive Hero */
+@media (max-width: 800px) {
+  .hero-section__bg {
+    height: 440px;
+    border-radius: 0 0 20px 20px;
+  }
+  .hero-section__title-container {
+    height: 200px;
+  }
+  .hero-section__title {
+    font-size: clamp(70px, 15vw, 120px);
+    letter-spacing: -3px;
+  }
+  .hero-section__badge {
+    right: 16px;
+    top: 16px;
+    transform: rotate(0);
+    padding: 6px 14px;
+  }
+  .hero-section__delivery {
+    height: 340px;
+    opacity: 0.8;
+  }
+  .hero-section__bottom {
+    left: 20px;
+    bottom: 20px;
+    right: 20px;
+    max-width: 100%;
+    align-items: center;
+    text-align: center;
+  }
+  .hero-section__float-card {
+    display: none; /* Mobilde karmaşayı önlemek için gizlendi */
+  }
+  .sparkle--3, .sparkle--4 {
+    display: none; /* Bazı ışıltıları gizle */
+  }
+}

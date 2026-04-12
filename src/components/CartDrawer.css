@@ -254,3 +254,13 @@
   transition: opacity 0.2s, transform 0.2s;
 }
 .cart-checkout-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+/* Responsive Cart Drawer */
+@media (max-width: 800px) {
+  .cart-drawer {
+    width: 100vw;
+  }
+  .cart-drawer__summary {
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+  }
+}

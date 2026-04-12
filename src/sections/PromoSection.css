@@ -133,3 +133,16 @@
   grid-template-columns: repeat(5, 1fr);
   gap: 16px;
 }
+
+/* Responsive Promo */
+@media (max-width: 1024px) {
+  .weekly__products-row, .most-selling__row {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 800px) {
+  .promo-section { padding: 24px 16px; gap: 32px; }
+  .promo-cards-row { grid-template-columns: 1fr; gap: 16px; }
+  .weekly__products-row, .most-selling__row { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .promo-card { min-height: 200px; padding: 20px; }
+}

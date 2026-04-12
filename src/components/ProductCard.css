@@ -220,3 +220,28 @@
 @keyframes shine {
   to { background-position-x: -200%; }
 }
+
+/* Responsive Product Card */
+@media (max-width: 800px) {
+  .product-card {
+    padding: 12px;
+    gap: 8px;
+  }
+  .product-card__image-container {
+    height: 120px;
+  }
+  .product-card__name {
+    font-size: 13px;
+  }
+  .product-card__price {
+    font-size: 16px;
+  }
+  .product-card__add-btn {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  .stepper-btn {
+    width: 24px;
+    height: 28px;
+  }
+}
